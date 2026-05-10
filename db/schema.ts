@@ -1,2 +1,78 @@
-// Drizzle schema. Tables added in build step 2 (schema + migration).
-export {};
+import { sql } from 'drizzle-orm';
+import { sqliteTable, integer, text, real, index } from 'drizzle-orm/sqlite-core';
+
+export const workouts = sqliteTable(
+  'workouts',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    date: text('date').notNull(),
+    dayKey: text('day_key').notNull(),
+    notes: text('notes'),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [index('workouts_date_idx').on(t.date)],
+);
+
+export const sets = sqliteTable(
+  'sets',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    workoutId: integer('workout_id')
+      .notNull()
+      .references(() => workouts.id, { onDelete: 'cascade' }),
+    exerciseKey: text('exercise_key').notNull(),
+    setNumber: integer('set_number').notNull(),
+    weight: real('weight'),
+    reps: integer('reps').notNull(),
+    rpe: integer('rpe'),
+    isSwap: integer('is_swap').notNull().default(0),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [
+    index('sets_workout_id_idx').on(t.workoutId),
+    index('sets_exercise_key_idx').on(t.exerciseKey),
+  ],
+);
+
+export const meals = sqliteTable(
+  'meals',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    date: text('date').notNull(),
+    proteinG: integer('protein_g').notNull(),
+    source: text('source').notNull(),
+    note: text('note'),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [index('meals_date_idx').on(t.date)],
+);
+
+export const bodyLog = sqliteTable(
+  'body_log',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    date: text('date').notNull(),
+    weightLb: real('weight_lb').notNull(),
+    photoUrl: text('photo_url'),
+    notes: text('notes'),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [index('body_log_date_idx').on(t.date)],
+);
+
+export type Workout = typeof workouts.$inferSelect;
+export type NewWorkout = typeof workouts.$inferInsert;
+export type WorkoutSet = typeof sets.$inferSelect;
+export type NewWorkoutSet = typeof sets.$inferInsert;
+export type Meal = typeof meals.$inferSelect;
+export type NewMeal = typeof meals.$inferInsert;
+export type BodyLogEntry = typeof bodyLog.$inferSelect;
+export type NewBodyLogEntry = typeof bodyLog.$inferInsert;

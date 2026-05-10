@@ -13,7 +13,7 @@ import {
 } from '@/db/schema';
 import type { DayKey } from '@/lib/program';
 
-async function ensureWorkout(date: string, dayKey: DayKey): Promise<number> {
+async function ensureWorkout(date: string, dayKey: string): Promise<number> {
   const existing = await db
     .select({ id: workouts.id })
     .from(workouts)
@@ -29,15 +29,16 @@ async function ensureWorkout(date: string, dayKey: DayKey): Promise<number> {
 
 export async function logSet(input: {
   date: string;
-  dayKey: DayKey;
+  dayKey: DayKey | 'custom';
   exerciseKey: string;
   setNumber: number;
   weight: number | null;
   reps: number;
   rpe?: number | null;
   isSwap?: boolean;
+  isWarmup?: boolean;
 }) {
-  const workoutId = await ensureWorkout(input.date, input.dayKey);
+  const workoutId = await ensureWorkout(input.date, input.dayKey as DayKey);
   // Upsert by (workout_id, exercise_key, set_number).
   const existing = await db
     .select({ id: sets.id })
@@ -58,6 +59,7 @@ export async function logSet(input: {
         reps: input.reps,
         rpe: input.rpe ?? null,
         isSwap: input.isSwap ? 1 : 0,
+        isWarmup: input.isWarmup ? 1 : 0,
       })
       .where(eq(sets.id, existing[0].id));
   } else {
@@ -69,6 +71,7 @@ export async function logSet(input: {
       reps: input.reps,
       rpe: input.rpe ?? null,
       isSwap: input.isSwap ? 1 : 0,
+      isWarmup: input.isWarmup ? 1 : 0,
     });
   }
   revalidatePath('/');
@@ -105,6 +108,19 @@ export async function deleteProtein(id: number) {
   revalidatePath('/meals');
 }
 
+export async function editProtein(input: {
+  id: number;
+  proteinG: number;
+  source: string;
+  note?: string | null;
+}) {
+  await db
+    .update(meals)
+    .set({ proteinG: input.proteinG, source: input.source, note: input.note ?? null })
+    .where(eq(meals.id, input.id));
+  revalidatePath('/meals');
+}
+
 export async function logBodyWeight(input: { date: string; weightLb: number; notes?: string }) {
   await db.insert(bodyLog).values({
     date: input.date,
@@ -119,6 +135,14 @@ export async function deleteBodyWeight(id: number) {
   revalidatePath('/weight');
 }
 
+export async function editBodyWeight(input: { id: number; weightLb: number; notes?: string | null }) {
+  await db
+    .update(bodyLog)
+    .set({ weightLb: input.weightLb, notes: input.notes ?? null })
+    .where(eq(bodyLog.id, input.id));
+  revalidatePath('/weight');
+}
+
 export async function logVert(input: { date: string; vertIn: number; notes?: string }) {
   await db.insert(vertLog).values({
     date: input.date,
@@ -130,6 +154,14 @@ export async function logVert(input: { date: string; vertIn: number; notes?: str
 
 export async function deleteVert(id: number) {
   await db.delete(vertLog).where(eq(vertLog.id, id));
+  revalidatePath('/vert');
+}
+
+export async function editVert(input: { id: number; vertIn: number; notes?: string | null }) {
+  await db
+    .update(vertLog)
+    .set({ vertIn: input.vertIn, notes: input.notes ?? null })
+    .where(eq(vertLog.id, input.id));
   revalidatePath('/vert');
 }
 
@@ -153,4 +185,17 @@ export async function deletePickup(id: number) {
   await db.delete(pickupLog).where(eq(pickupLog.id, id));
   revalidatePath('/pickup');
   revalidatePath('/');
+}
+
+export async function editPickup(input: {
+  id: number;
+  sport: string;
+  durationMin: number | null;
+  notes?: string | null;
+}) {
+  await db
+    .update(pickupLog)
+    .set({ sport: input.sport, durationMin: input.durationMin, notes: input.notes ?? null })
+    .where(eq(pickupLog.id, input.id));
+  revalidatePath('/pickup');
 }

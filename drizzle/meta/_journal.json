@@ -15,6 +15,13 @@
       "when": 1778388909579,
       "tag": "0001_natural_colossus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1778455508161,
+      "tag": "0002_lovely_frank_castle",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { logVert, deleteVert } from '@/app/actions';
+import { logVert, deleteVert, editVert } from '@/app/actions';
 import { todayISO } from '@/lib/date';
 import type { VertLogEntry } from '@/db/schema';
 import { Sparkline } from './Sparkline';
@@ -10,7 +10,28 @@ export function VertPanel({ initial }: { initial: VertLogEntry[] }) {
   const [entries, setEntries] = useState(initial);
   const [vert, setVert] = useState('');
   const [notes, setNotes] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editV, setEditV] = useState('');
+  const [editN, setEditN] = useState('');
   const [pending, startTransition] = useTransition();
+
+  function startEdit(id: number, vertIn: number, n: string | null) {
+    setEditingId(id);
+    setEditV(String(vertIn));
+    setEditN(n ?? '');
+  }
+  function saveEdit() {
+    if (editingId == null) return;
+    const v = Number(editV);
+    if (!Number.isFinite(v) || v <= 0) return;
+    startTransition(async () => {
+      if (editingId > 0) await editVert({ id: editingId, vertIn: v, notes: editN || null });
+      setEntries((es) =>
+        es.map((e) => (e.id === editingId ? { ...e, vertIn: v, notes: editN || null } : e)),
+      );
+      setEditingId(null);
+    });
+  }
 
   function submit() {
     const v = Number(vert);
@@ -96,22 +117,71 @@ export function VertPanel({ initial }: { initial: VertLogEntry[] }) {
             {entries.map((e) => (
               <li
                 key={e.id}
-                className="flex items-center justify-between bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-3 py-2"
+                className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-3 py-2"
               >
-                <div className="flex flex-col">
-                  <span className="text-xs text-[var(--color-muted)] tabular-nums">{e.date}</span>
-                  {e.notes && <span className="text-xs italic text-[var(--color-muted)]">{e.notes}</span>}
-                </div>
-                <span className="flex items-center gap-2">
-                  <span className="font-mono tabular-nums text-sm">{e.vertIn}″</span>
-                  <button
-                    type="button"
-                    onClick={() => remove(e.id)}
-                    className="text-[var(--color-muted)] hover:text-[var(--color-bad)]"
-                  >
-                    ×
-                  </button>
-                </span>
+                {editingId === e.id ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[var(--color-muted)] tabular-nums">{e.date}</span>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.5"
+                        value={editV}
+                        onChange={(ev) => setEditV(ev.target.value)}
+                        className="w-20 bg-neutral-900 rounded-md px-2 py-1 text-sm tabular-nums outline-none focus:ring-1 focus:ring-emerald-500"
+                      />
+                      <span className="text-xs text-[var(--color-muted)]">in</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={editN}
+                      onChange={(ev) => setEditN(ev.target.value)}
+                      placeholder="notes"
+                      className="bg-neutral-900 rounded-md px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={saveEdit}
+                        className="px-2 py-1 rounded-md bg-emerald-500 text-black text-xs font-semibold"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="text-[var(--color-muted)] text-xs"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-[var(--color-muted)] tabular-nums">{e.date}</span>
+                      {e.notes && <span className="text-xs italic text-[var(--color-muted)]">{e.notes}</span>}
+                    </div>
+                    <span className="flex items-center gap-2">
+                      <span className="font-mono tabular-nums text-sm">{e.vertIn}″</span>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(e.id, e.vertIn, e.notes)}
+                        className="text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(e.id)}
+                        className="text-[var(--color-muted)] hover:text-[var(--color-bad)]"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

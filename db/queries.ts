@@ -43,14 +43,26 @@ export async function getLastSessionForExercise(
     .select({ workoutId: sets.workoutId, date: workouts.date })
     .from(sets)
     .innerJoin(workouts, eq(sets.workoutId, workouts.id))
-    .where(and(eq(sets.exerciseKey, exerciseKey), sql`${workouts.date} < ${beforeDate}`))
+    .where(
+      and(
+        eq(sets.exerciseKey, exerciseKey),
+        eq(sets.isWarmup, 0),
+        sql`${workouts.date} < ${beforeDate}`,
+      ),
+    )
     .orderBy(desc(workouts.date), desc(sets.id))
     .limit(1);
   if (!last[0]) return null;
   const rows = await db
     .select()
     .from(sets)
-    .where(and(eq(sets.workoutId, last[0].workoutId), eq(sets.exerciseKey, exerciseKey)))
+    .where(
+      and(
+        eq(sets.workoutId, last[0].workoutId),
+        eq(sets.exerciseKey, exerciseKey),
+        eq(sets.isWarmup, 0),
+      ),
+    )
     .orderBy(sets.setNumber, sets.id);
   return { date: last[0].date, sets: rows };
 }
@@ -115,7 +127,7 @@ export async function getExerciseHistory(exerciseKey: string, limit = 20) {
     })
     .from(sets)
     .innerJoin(workouts, eq(sets.workoutId, workouts.id))
-    .where(eq(sets.exerciseKey, exerciseKey))
+    .where(and(eq(sets.exerciseKey, exerciseKey), eq(sets.isWarmup, 0)))
     .groupBy(sets.workoutId, workouts.date)
     .orderBy(desc(workouts.date))
     .limit(limit);

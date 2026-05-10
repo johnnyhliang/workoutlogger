@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
-import { logProtein, deleteProtein } from '@/app/actions';
+import { logProtein, deleteProtein, editProtein } from '@/app/actions';
 import { proteinQuickAdds, PROTEIN_GOAL_G } from '@/lib/meals';
 import { todayISO } from '@/lib/date';
 import type { Meal } from '@/db/schema';
@@ -21,6 +21,12 @@ export function ProteinPage({
   const [date, setDate] = useState<string | null>(null);
   const [entries, setEntries] = useState(initialEntries);
   const [total, setTotal] = useState(initialTotal);
+  const [showCustom, setShowCustom] = useState(false);
+  const [customG, setCustomG] = useState('');
+  const [customLabel, setCustomLabel] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editG, setEditG] = useState('');
+  const [editLabel, setEditLabel] = useState('');
   const [pending, startTransition] = useTransition();
 
   useEffect(() => setDate(todayISO()), []);
@@ -55,13 +61,45 @@ export function ProteinPage({
     });
   }
 
-  function addCustom() {
-    const raw = prompt('Protein (g)?');
-    if (!raw) return;
-    const g = Number(raw);
+  function submitCustom() {
+    const g = Number(customG);
     if (!Number.isFinite(g) || g <= 0) return;
-    const note = prompt('Label?') ?? 'custom';
-    add(note, Math.round(g), 'custom');
+    add(customLabel || 'custom', Math.round(g), 'custom');
+    setCustomG('');
+    setCustomLabel('');
+    setShowCustom(false);
+  }
+
+  function startEdit(e: Meal) {
+    setEditingId(e.id);
+    setEditG(String(e.proteinG));
+    setEditLabel(e.note ?? '');
+  }
+
+  function saveEdit() {
+    if (editingId == null) return;
+    const g = Number(editG);
+    if (!Number.isFinite(g) || g <= 0) return;
+    const prev = entries.find((x) => x.id === editingId);
+    if (!prev) return;
+    const delta = Math.round(g) - prev.proteinG;
+    startTransition(async () => {
+      if (editingId > 0) {
+        await editProtein({
+          id: editingId,
+          proteinG: Math.round(g),
+          source: prev.source,
+          note: editLabel || null,
+        });
+      }
+      setEntries((es) =>
+        es.map((x) =>
+          x.id === editingId ? { ...x, proteinG: Math.round(g), note: editLabel || null } : x,
+        ),
+      );
+      setTotal((t) => t + delta);
+      setEditingId(null);
+    });
   }
 
   function remove(id: number, g: number) {
@@ -99,12 +137,44 @@ export function ProteinPage({
         <button
           type="button"
           disabled={pending || !date}
-          onClick={addCustom}
+          onClick={() => setShowCustom((v) => !v)}
           className="rounded-xl border border-dashed border-[var(--color-border)] p-3 text-[var(--color-muted)] text-sm"
         >
-          Custom…
+          {showCustom ? 'Cancel' : 'Custom…'}
         </button>
       </div>
+
+      {showCustom && (
+        <section className="rounded-xl bg-[var(--color-card)] border border-[var(--color-border)] p-3 mb-4 flex flex-col gap-2">
+          <div className="flex gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              step="1"
+              placeholder="grams"
+              value={customG}
+              onChange={(e) => setCustomG(e.target.value)}
+              autoFocus
+              className="w-24 bg-neutral-900 rounded-lg px-3 py-2 tabular-nums outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+            <input
+              type="text"
+              placeholder="label (optional)"
+              value={customLabel}
+              onChange={(e) => setCustomLabel(e.target.value)}
+              className="flex-1 bg-neutral-900 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+            <button
+              type="button"
+              onClick={submitCustom}
+              disabled={!customG}
+              className="px-4 rounded-lg bg-emerald-500 text-black font-semibold disabled:opacity-30"
+            >
+              Add
+            </button>
+          </div>
+        </section>
+      )}
 
       <section className="mb-4">
         <h2 className="text-sm font-semibold mb-2">Today</h2>
@@ -115,19 +185,61 @@ export function ProteinPage({
             {entries.map((e) => (
               <li
                 key={e.id}
-                className="flex items-center justify-between bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-3 py-2"
+                className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-3 py-2"
               >
-                <span className="text-sm">{e.note ?? e.source}</span>
-                <span className="flex items-center gap-2">
-                  <span className="font-mono tabular-nums text-sm">+{e.proteinG}g</span>
-                  <button
-                    type="button"
-                    onClick={() => remove(e.id, e.proteinG)}
-                    className="text-[var(--color-muted)] hover:text-[var(--color-bad)]"
-                  >
-                    ×
-                  </button>
-                </span>
+                {editingId === e.id ? (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={editG}
+                      onChange={(ev) => setEditG(ev.target.value)}
+                      className="w-20 bg-neutral-900 rounded-md px-2 py-1 text-sm tabular-nums outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                    <input
+                      type="text"
+                      value={editLabel}
+                      onChange={(ev) => setEditLabel(ev.target.value)}
+                      placeholder="label"
+                      className="flex-1 bg-neutral-900 rounded-md px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={saveEdit}
+                      className="px-2 py-1 rounded-md bg-emerald-500 text-black text-xs font-semibold"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      className="text-[var(--color-muted)] text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">{e.note ?? e.source}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="font-mono tabular-nums text-sm">+{e.proteinG}g</span>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(e)}
+                        className="text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(e.id, e.proteinG)}
+                        className="text-[var(--color-muted)] hover:text-[var(--color-bad)]"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

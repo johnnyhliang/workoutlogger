@@ -58,6 +58,7 @@ export const sets = sqliteTable(
     reps: integer('reps').notNull(),
     rpe: integer('rpe'),
     isSwap: integer('is_swap').notNull().default(0),
+    isWarmup: integer('is_warmup').notNull().default(0),
     createdAt: integer('created_at')
       .notNull()
       .default(sql`(unixepoch() * 1000)`),

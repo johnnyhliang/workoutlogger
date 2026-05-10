@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { logBodyWeight, deleteBodyWeight } from '@/app/actions';
+import { logBodyWeight, deleteBodyWeight, editBodyWeight } from '@/app/actions';
 import { todayISO } from '@/lib/date';
 import type { BodyLogEntry } from '@/db/schema';
 import { Sparkline } from './Sparkline';
@@ -9,7 +9,26 @@ import { Sparkline } from './Sparkline';
 export function WeightPanel({ initial }: { initial: BodyLogEntry[] }) {
   const [entries, setEntries] = useState(initial);
   const [weight, setWeight] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editW, setEditW] = useState('');
   const [pending, startTransition] = useTransition();
+
+  function startEdit(id: number, w: number) {
+    setEditingId(id);
+    setEditW(String(w));
+  }
+  function saveEdit() {
+    if (editingId == null) return;
+    const w = Number(editW);
+    if (!Number.isFinite(w) || w <= 0) return;
+    startTransition(async () => {
+      if (editingId > 0) await editBodyWeight({ id: editingId, weightLb: w });
+      setEntries((es) =>
+        es.map((e) => (e.id === editingId ? { ...e, weightLb: w } : e)),
+      );
+      setEditingId(null);
+    });
+  }
 
   function submit() {
     const w = Number(weight);
@@ -46,6 +65,7 @@ export function WeightPanel({ initial }: { initial: BodyLogEntry[] }) {
       <nav className="text-xs text-[var(--color-muted)] mb-4 flex gap-3">
         <a href="/vert" className="underline">Vert →</a>
         <a href="/pickup" className="underline">Pickup →</a>
+        <a href="/plates" className="underline">Plates →</a>
       </nav>
 
       <section className="rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] p-4 mb-4">
@@ -86,19 +106,56 @@ export function WeightPanel({ initial }: { initial: BodyLogEntry[] }) {
             {entries.map((e) => (
               <li
                 key={e.id}
-                className="flex items-center justify-between bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-3 py-2"
+                className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-3 py-2"
               >
-                <span className="text-xs text-[var(--color-muted)] tabular-nums">{e.date}</span>
-                <span className="flex items-center gap-2">
-                  <span className="font-mono tabular-nums text-sm">{e.weightLb} lb</span>
-                  <button
-                    type="button"
-                    onClick={() => remove(e.id)}
-                    className="text-[var(--color-muted)] hover:text-[var(--color-bad)]"
-                  >
-                    ×
-                  </button>
-                </span>
+                {editingId === e.id ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--color-muted)] tabular-nums">{e.date}</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.2"
+                      value={editW}
+                      onChange={(ev) => setEditW(ev.target.value)}
+                      className="flex-1 bg-neutral-900 rounded-md px-2 py-1 text-sm tabular-nums outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={saveEdit}
+                      className="px-2 py-1 rounded-md bg-emerald-500 text-black text-xs font-semibold"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      className="text-[var(--color-muted)] text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-[var(--color-muted)] tabular-nums">{e.date}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="font-mono tabular-nums text-sm">{e.weightLb} lb</span>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(e.id, e.weightLb)}
+                        className="text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(e.id)}
+                        className="text-[var(--color-muted)] hover:text-[var(--color-bad)]"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

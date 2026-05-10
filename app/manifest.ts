@@ -11,12 +11,10 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#000000',
     orientation: 'portrait',
     icons: [
-      {
-        src: '/icon.svg',
-        sizes: 'any',
-        type: 'image/svg+xml',
-        purpose: 'any',
-      },
+      // Generated PNGs from app/icon.tsx and app/apple-icon.tsx
+      { src: '/icon', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/apple-icon', sizes: '180x180', type: 'image/png', purpose: 'any' },
+      // Maskable SVG retained for adaptive icon platforms
       {
         src: '/icon-maskable.svg',
         sizes: 'any',

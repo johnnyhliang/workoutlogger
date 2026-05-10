@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { logPickup, deletePickup } from '@/app/actions';
+import { logPickup, deletePickup, editPickup } from '@/app/actions';
 import { todayISO } from '@/lib/date';
 import type { PickupLogEntry } from '@/db/schema';
 
@@ -10,7 +10,39 @@ export function PickupPanel({ initial }: { initial: PickupLogEntry[] }) {
   const [sport, setSport] = useState<'basketball' | 'volleyball'>('basketball');
   const [duration, setDuration] = useState('');
   const [notes, setNotes] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editSport, setEditSport] = useState<'basketball' | 'volleyball'>('basketball');
+  const [editDur, setEditDur] = useState('');
+  const [editN, setEditN] = useState('');
   const [pending, startTransition] = useTransition();
+
+  function startEdit(e: PickupLogEntry) {
+    setEditingId(e.id);
+    setEditSport(e.sport === 'volleyball' ? 'volleyball' : 'basketball');
+    setEditDur(e.durationMin != null ? String(e.durationMin) : '');
+    setEditN(e.notes ?? '');
+  }
+  function saveEdit() {
+    if (editingId == null) return;
+    const dur = editDur ? Number(editDur) : null;
+    startTransition(async () => {
+      if (editingId > 0)
+        await editPickup({
+          id: editingId,
+          sport: editSport,
+          durationMin: dur,
+          notes: editN || null,
+        });
+      setEntries((es) =>
+        es.map((x) =>
+          x.id === editingId
+            ? { ...x, sport: editSport, durationMin: dur, notes: editN || null }
+            : x,
+        ),
+      );
+      setEditingId(null);
+    });
+  }
 
   function submit() {
     const dur = duration ? Number(duration) : null;
@@ -107,23 +139,88 @@ export function PickupPanel({ initial }: { initial: PickupLogEntry[] }) {
             {entries.map((e) => (
               <li
                 key={e.id}
-                className="flex items-center justify-between bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-3 py-2"
+                className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-3 py-2"
               >
-                <div className="flex flex-col">
-                  <span className="text-xs text-[var(--color-muted)] tabular-nums">{e.date}</span>
-                  {e.notes && <span className="text-xs italic text-[var(--color-muted)]">{e.notes}</span>}
-                </div>
-                <span className="flex items-center gap-2">
-                  <span className="text-sm">{e.sport === 'basketball' ? '🏀' : '🏐'}</span>
-                  {e.durationMin && <span className="font-mono tabular-nums text-xs">{e.durationMin}m</span>}
-                  <button
-                    type="button"
-                    onClick={() => remove(e.id)}
-                    className="text-[var(--color-muted)] hover:text-[var(--color-bad)]"
-                  >
-                    ×
-                  </button>
-                </span>
+                {editingId === e.id ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditSport('basketball')}
+                        className={`flex-1 py-1.5 rounded-md text-xs font-semibold ${
+                          editSport === 'basketball' ? 'bg-emerald-500 text-black' : 'bg-neutral-900'
+                        }`}
+                      >
+                        🏀
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditSport('volleyball')}
+                        className={`flex-1 py-1.5 rounded-md text-xs font-semibold ${
+                          editSport === 'volleyball' ? 'bg-emerald-500 text-black' : 'bg-neutral-900'
+                        }`}
+                      >
+                        🏐
+                      </button>
+                    </div>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={editDur}
+                      onChange={(ev) => setEditDur(ev.target.value)}
+                      placeholder="duration min"
+                      className="bg-neutral-900 rounded-md px-2 py-1 text-sm tabular-nums outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                    <input
+                      type="text"
+                      value={editN}
+                      onChange={(ev) => setEditN(ev.target.value)}
+                      placeholder="notes"
+                      className="bg-neutral-900 rounded-md px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={saveEdit}
+                        className="px-2 py-1 rounded-md bg-emerald-500 text-black text-xs font-semibold"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="text-[var(--color-muted)] text-xs"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-[var(--color-muted)] tabular-nums">{e.date}</span>
+                      {e.notes && <span className="text-xs italic text-[var(--color-muted)]">{e.notes}</span>}
+                    </div>
+                    <span className="flex items-center gap-2">
+                      <span className="text-sm">{e.sport === 'basketball' ? '🏀' : '🏐'}</span>
+                      {e.durationMin && <span className="font-mono tabular-nums text-xs">{e.durationMin}m</span>}
+                      <button
+                        type="button"
+                        onClick={() => startEdit(e)}
+                        className="text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(e.id)}
+                        className="text-[var(--color-muted)] hover:text-[var(--color-bad)]"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

@@ -11,7 +11,12 @@ export function DayOverride({ current }: { current: DayKey | null }) {
   const pathname = usePathname();
   const search = useSearchParams();
 
-  function pick(k: DayKey | '') {
+  function pick(k: string) {
+    if (k === 'custom') {
+      const d = search.get('d') ?? '';
+      router.push(`/custom?d=${d}`);
+      return;
+    }
     const params = new URLSearchParams(search);
     if (k) params.set('override', k);
     else params.delete('override');
@@ -21,7 +26,7 @@ export function DayOverride({ current }: { current: DayKey | null }) {
   return (
     <select
       value={current ?? ''}
-      onChange={(e) => pick(e.target.value as DayKey | '')}
+      onChange={(e) => pick(e.target.value)}
       className="bg-neutral-900 border border-[var(--color-border)] rounded-md px-2 py-1 text-sm"
     >
       <option value="">— pick a day —</option>
@@ -30,6 +35,7 @@ export function DayOverride({ current }: { current: DayKey | null }) {
           {dayLabel(k)}
         </option>
       ))}
+      <option value="custom">Custom (off-program)…</option>
     </select>
   );
 }

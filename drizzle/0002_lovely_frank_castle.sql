@@ -1,0 +1,1 @@
+ALTER TABLE `sets` ADD `is_warmup` integer DEFAULT 0 NOT NULL;

@@ -8,11 +8,41 @@ export const workouts = sqliteTable(
     date: text('date').notNull(),
     dayKey: text('day_key').notNull(),
     notes: text('notes'),
+    sleptOk: integer('slept_ok'),
     createdAt: integer('created_at')
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
   },
   (t) => [index('workouts_date_idx').on(t.date)],
+);
+
+export const vertLog = sqliteTable(
+  'vert_log',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    date: text('date').notNull(),
+    vertIn: real('vert_in').notNull(),
+    notes: text('notes'),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [index('vert_log_date_idx').on(t.date)],
+);
+
+export const pickupLog = sqliteTable(
+  'pickup_log',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    date: text('date').notNull(),
+    sport: text('sport').notNull(),
+    durationMin: integer('duration_min'),
+    notes: text('notes'),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [index('pickup_log_date_idx').on(t.date)],
 );
 
 export const sets = sqliteTable(
@@ -76,3 +106,7 @@ export type Meal = typeof meals.$inferSelect;
 export type NewMeal = typeof meals.$inferInsert;
 export type BodyLogEntry = typeof bodyLog.$inferSelect;
 export type NewBodyLogEntry = typeof bodyLog.$inferInsert;
+export type VertLogEntry = typeof vertLog.$inferSelect;
+export type NewVertLogEntry = typeof vertLog.$inferInsert;
+export type PickupLogEntry = typeof pickupLog.$inferSelect;
+export type NewPickupLogEntry = typeof pickupLog.$inferInsert;

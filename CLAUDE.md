@@ -2,6 +2,8 @@
 
 This is a personal lift tracker. Read SPEC.md before doing anything.
 
+@AGENTS.md
+
 ## Working principles
 
 - **Ship working code over perfect code.** This is a personal tool, not production SaaS. Prioritize shipped + deployed over architecturally pristine.

@@ -1,65 +1,149 @@
-import Image from "next/image";
+import { DateRedirect } from './components/DateRedirect';
+import { ExerciseCard } from './components/ExerciseCard';
+import { SleepToggle } from './components/SleepToggle';
+import { MobilityChecklist } from './components/MobilityChecklist';
+import { DayOverride } from './components/DayOverride';
+import { PickupQuickToggle } from './components/PickupQuickToggle';
+import { program, type DayKey } from '@/lib/program';
+import { suggestDayKey, dayLabel } from '@/lib/day-logic';
+import {
+  getLastFridayType,
+  getWorkoutForDay,
+  getSetsForWorkout,
+  getLastSessionForExercise,
+  getPickupLog,
+} from '@/db/queries';
+import type { WorkoutSet } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import { db } from '@/db/client';
+import { pickupLog } from '@/db/schema';
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+export const dynamic = 'force-dynamic';
+
+const VALID_DAY_KEYS: DayKey[] = ['lower_heavy', 'upper_full', 'lower_power', 'upper_pull'];
+
+export default async function Today({
+  searchParams,
+}: {
+  searchParams: Promise<{ d?: string; w?: string; override?: string }>;
+}) {
+  const params = await searchParams;
+  const date = params.d;
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return <DateRedirect />;
+
+  const weekday = (params.w ?? '').toLowerCase();
+  const override = params.override && (VALID_DAY_KEYS as string[]).includes(params.override)
+    ? (params.override as DayKey)
+    : null;
+  const lastFridayType = await getLastFridayType();
+  const dayKey = override ?? suggestDayKey(weekday, lastFridayType);
+
+  const todayPickups = await db
+    .select()
+    .from(pickupLog)
+    .where(eq(pickupLog.date, date));
+
+  if (!dayKey) {
+    return (
+      <main className="px-4 pt-6">
+        <Header date={date} weekday={weekday} dayKey={null} />
+        <p className="text-[var(--color-muted)] text-sm mb-4">
+          Rest day — pickup or recovery. Pick a workout below if you want to lift anyway.
+        </p>
+        <div className="rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] p-4 mb-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-semibold">Override:</span>
+            <DayOverride current={null} />
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        <PickupQuickToggle date={date} today={todayPickups} />
       </main>
-    </div>
+    );
+  }
+
+  const workout = await getWorkoutForDay(date);
+  const allSets: WorkoutSet[] = workout ? await getSetsForWorkout(workout.id) : [];
+  const setsByEx = new Map<string, WorkoutSet[]>();
+  for (const s of allSets) {
+    const arr = setsByEx.get(s.exerciseKey) ?? [];
+    arr.push(s);
+    setsByEx.set(s.exerciseKey, arr);
+  }
+
+  const exercises = program.workouts[dayKey].exercises;
+
+  // Beat-last-week: query last session per default exercise key
+  // (ignores swaps; "compare same key" is the rule from IDEAS).
+  const lastSessions = await Promise.all(
+    exercises.map(async (ex) => {
+      const activeKey = (() => {
+        const setsForDefault = setsByEx.get(ex.key);
+        if (setsForDefault && setsForDefault.length > 0) return ex.key;
+        // If user already swapped, find the swap key in setsByEx
+        for (const [k, v] of setsByEx) {
+          if (v[0]?.isSwap === 1 && (ex.swaps ?? []).includes(k)) return k;
+        }
+        return ex.key;
+      })();
+      return getLastSessionForExercise(activeKey, date);
+    }),
+  );
+
+  return (
+    <main className="px-4 pt-6">
+      <Header date={date} weekday={weekday} dayKey={dayKey} />
+
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs text-[var(--color-muted)]">Override day</span>
+        <DayOverride current={dayKey} />
+      </div>
+
+      {exercises.map((ex, i) => (
+        <ExerciseCard
+          key={ex.key}
+          exercise={ex}
+          date={date}
+          dayKey={dayKey}
+          existingSets={
+            // Show sets for the active key (default or already-swapped)
+            (() => {
+              const def = setsByEx.get(ex.key) ?? [];
+              if (def.length > 0) return def;
+              for (const [k, v] of setsByEx) {
+                if (v[0]?.isSwap === 1 && (ex.swaps ?? []).includes(k)) return v;
+              }
+              return [];
+            })()
+          }
+          lastSession={lastSessions[i]}
+        />
+      ))}
+
+      <SleepToggle date={date} dayKey={dayKey} initial={workout?.sleptOk} />
+      <PickupQuickToggle date={date} today={todayPickups} />
+      <MobilityChecklist date={date} />
+    </main>
+  );
+}
+
+function Header({
+  date,
+  weekday,
+  dayKey,
+}: {
+  date: string;
+  weekday: string;
+  dayKey: DayKey | null;
+}) {
+  const cap = weekday ? weekday[0].toUpperCase() + weekday.slice(1) : '';
+  return (
+    <header className="mb-4">
+      <p className="text-xs text-[var(--color-muted)] tabular-nums">
+        {cap} · {date}
+      </p>
+      <h1 className="text-3xl font-bold tracking-tight">
+        {dayKey ? dayLabel(dayKey) : 'Rest Day'}
+      </h1>
+    </header>
   );
 }

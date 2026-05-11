@@ -303,6 +303,14 @@ export async function saveMobilityConfig(exercises: MobilityExercise[]) {
   revalidatePath('/custom');
 }
 
+export async function logoutAction() {
+  const { cookies } = await import('next/headers');
+  const { redirect: redir } = await import('next/navigation');
+  const jar = await cookies();
+  jar.delete('app_auth');
+  redir('/login');
+}
+
 export async function saveGuide(content: string) {
   const existing = await db.select({ id: guideContent.id }).from(guideContent).limit(1);
   if (existing[0]) {

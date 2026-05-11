@@ -1,4 +1,5 @@
 import { DateRedirect } from './components/DateRedirect';
+import { LogoutButton } from './components/LogoutButton';
 import { ExerciseCard } from './components/ExerciseCard';
 import { CustomExerciseSection } from './components/CustomExerciseSection';
 import { SleepToggle } from './components/SleepToggle';
@@ -162,7 +163,7 @@ function Header({
         <a href={`/custom?d=${date}`} className="px-2.5 py-1 rounded-lg bg-neutral-900 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)] border border-[var(--color-border)]">Custom</a>
         <a href="/plates" className="px-2.5 py-1 rounded-lg bg-neutral-900 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)] border border-[var(--color-border)]">Plates</a>
         <a href="/guide" className="px-2.5 py-1 rounded-lg bg-neutral-900 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)] border border-[var(--color-border)]">Guide</a>
-        <a href="/logout" className="px-2.5 py-1 rounded-lg bg-neutral-900 text-xs text-[var(--color-muted)] hover:text-red-400 border border-[var(--color-border)]">Out</a>
+        <LogoutButton />
       </nav>
     </header>
   );

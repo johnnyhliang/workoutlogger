@@ -162,6 +162,7 @@ function Header({
         <a href={`/custom?d=${date}`} className="px-2.5 py-1 rounded-lg bg-neutral-900 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)] border border-[var(--color-border)]">Custom</a>
         <a href="/plates" className="px-2.5 py-1 rounded-lg bg-neutral-900 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)] border border-[var(--color-border)]">Plates</a>
         <a href="/guide" className="px-2.5 py-1 rounded-lg bg-neutral-900 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)] border border-[var(--color-border)]">Guide</a>
+        <a href="/logout" className="px-2.5 py-1 rounded-lg bg-neutral-900 text-xs text-[var(--color-muted)] hover:text-red-400 border border-[var(--color-border)]">Out</a>
       </nav>
     </header>
   );

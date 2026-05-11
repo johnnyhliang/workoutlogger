@@ -10,6 +10,9 @@ import {
   bodyLog,
   vertLog,
   pickupLog,
+  dayNotes,
+  customExercises,
+  guideContent,
 } from '@/db/schema';
 import type { DayKey } from '@/lib/program';
 
@@ -121,10 +124,16 @@ export async function editProtein(input: {
   revalidatePath('/meals');
 }
 
-export async function logBodyWeight(input: { date: string; weightLb: number; notes?: string }) {
+export async function logBodyWeight(input: {
+  date: string;
+  weightLb: number;
+  bodyFatPct?: number | null;
+  notes?: string;
+}) {
   await db.insert(bodyLog).values({
     date: input.date,
     weightLb: input.weightLb,
+    bodyFatPct: input.bodyFatPct ?? null,
     notes: input.notes ?? null,
   });
   revalidatePath('/weight');
@@ -135,10 +144,19 @@ export async function deleteBodyWeight(id: number) {
   revalidatePath('/weight');
 }
 
-export async function editBodyWeight(input: { id: number; weightLb: number; notes?: string | null }) {
+export async function editBodyWeight(input: {
+  id: number;
+  weightLb: number;
+  bodyFatPct?: number | null;
+  notes?: string | null;
+}) {
   await db
     .update(bodyLog)
-    .set({ weightLb: input.weightLb, notes: input.notes ?? null })
+    .set({
+      weightLb: input.weightLb,
+      bodyFatPct: input.bodyFatPct ?? null,
+      notes: input.notes ?? null,
+    })
     .where(eq(bodyLog.id, input.id));
   revalidatePath('/weight');
 }
@@ -198,4 +216,76 @@ export async function editPickup(input: {
     .set({ sport: input.sport, durationMin: input.durationMin, notes: input.notes ?? null })
     .where(eq(pickupLog.id, input.id));
   revalidatePath('/pickup');
+}
+
+export async function setDayNote(date: string, note: string) {
+  if (!note.trim()) {
+    await db.delete(dayNotes).where(eq(dayNotes.date, date));
+  } else {
+    const existing = await db.select({ date: dayNotes.date }).from(dayNotes).where(eq(dayNotes.date, date)).limit(1);
+    if (existing[0]) {
+      await db
+        .update(dayNotes)
+        .set({ note, updatedAt: Date.now() })
+        .where(eq(dayNotes.date, date));
+    } else {
+      await db.insert(dayNotes).values({ date, note });
+    }
+  }
+  revalidatePath('/');
+  revalidatePath('/history');
+}
+
+export async function saveCustomExercise(input: {
+  key: string;
+  name: string;
+  description?: string | null;
+  category?: string | null;
+  videoUrl?: string | null;
+}) {
+  const existing = await db
+    .select({ key: customExercises.key })
+    .from(customExercises)
+    .where(eq(customExercises.key, input.key))
+    .limit(1);
+  if (existing[0]) {
+    await db
+      .update(customExercises)
+      .set({
+        name: input.name,
+        description: input.description ?? null,
+        category: input.category ?? null,
+        videoUrl: input.videoUrl ?? null,
+      })
+      .where(eq(customExercises.key, input.key));
+  } else {
+    await db.insert(customExercises).values({
+      key: input.key,
+      name: input.name,
+      description: input.description ?? null,
+      category: input.category ?? null,
+      videoUrl: input.videoUrl ?? null,
+    });
+  }
+  revalidatePath('/custom');
+  revalidatePath('/exercises');
+}
+
+export async function deleteCustomExercise(key: string) {
+  await db.delete(customExercises).where(eq(customExercises.key, key));
+  revalidatePath('/custom');
+  revalidatePath('/exercises');
+}
+
+export async function saveGuide(content: string) {
+  const existing = await db.select({ id: guideContent.id }).from(guideContent).limit(1);
+  if (existing[0]) {
+    await db
+      .update(guideContent)
+      .set({ content, updatedAt: Date.now() })
+      .where(eq(guideContent.id, existing[0].id));
+  } else {
+    await db.insert(guideContent).values({ id: 1, content });
+  }
+  revalidatePath('/guide');
 }

@@ -4,6 +4,7 @@ import { db } from '@/db/client';
 import { workouts, sets } from '@/db/schema';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { program } from '@/lib/program';
+import { getCustomExercises } from '@/db/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,6 @@ export default async function CustomPage({
   const date = params.d;
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return <DateRedirect />;
 
-  // Find or build today's custom workout's sets
   const today = await db
     .select()
     .from(workouts)
@@ -26,19 +26,30 @@ export default async function CustomPage({
     ? await db.select().from(sets).where(eq(sets.workoutId, today[0].id))
     : [];
 
-  // Suggestions: recent exercise_keys NOT already in the program defaults
+  const [customExercises, recentRows] = await Promise.all([
+    getCustomExercises(),
+    db
+      .selectDistinct({ key: sets.exerciseKey })
+      .from(sets)
+      .innerJoin(workouts, eq(sets.workoutId, workouts.id))
+      .orderBy(desc(sql`${workouts.date}`))
+      .limit(40),
+  ]);
+
   const programKeys = new Set(
     Object.values(program.workouts).flatMap((w) => w.exercises.map((e) => e.key)),
   );
-  const recent = await db
-    .selectDistinct({ key: sets.exerciseKey })
-    .from(sets)
-    .innerJoin(workouts, eq(sets.workoutId, workouts.id))
-    .orderBy(desc(sql`${workouts.date}`))
-    .limit(40);
-  const suggestions = recent
-    .map((r) => r.key)
-    .filter((k) => !programKeys.has(k));
+  const savedKeys = new Set(customExercises.map((e) => e.key));
+  // Suggestions: names of saved custom exercises + recent non-program keys not already saved
+  const suggestions = [
+    ...customExercises.map((e) => e.name),
+    ...recentRows
+      .map((r) => r.key)
+      .filter((k) => !programKeys.has(k) && !savedKeys.has(k))
+      .map((k) =>
+        k.split('_').map((p) => (p ? p[0].toUpperCase() + p.slice(1) : p)).join(' '),
+      ),
+  ];
 
   return (
     <main className="px-4 pt-6">
@@ -49,7 +60,12 @@ export default async function CustomPage({
           Off-program / garage / improv. Logs save under day_key=&quot;custom&quot;.
         </p>
       </header>
-      <CustomWorkout date={date} existingSets={setsToday} suggestions={suggestions} />
+      <CustomWorkout
+        date={date}
+        existingSets={setsToday}
+        suggestions={suggestions}
+        savedExercises={customExercises}
+      />
     </main>
   );
 }

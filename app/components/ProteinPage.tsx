@@ -6,6 +6,7 @@ import { proteinQuickAdds, PROTEIN_GOAL_G } from '@/lib/meals';
 import { todayISO } from '@/lib/date';
 import type { Meal } from '@/db/schema';
 import { Sparkline } from './Sparkline';
+import { useEscapeKey } from '@/lib/hooks';
 
 type DailyTotal = { date: string; total: number };
 
@@ -30,6 +31,13 @@ export function ProteinPage({
   const [pending, startTransition] = useTransition();
 
   useEffect(() => setDate(todayISO()), []);
+
+  useEscapeKey(showCustom, () => {
+    setShowCustom(false);
+    setCustomG('');
+    setCustomLabel('');
+  });
+  useEscapeKey(editingId != null, () => setEditingId(null));
 
   const hour = useMemo(() => new Date().getHours(), []);
   const colorClass =
@@ -145,8 +153,23 @@ export function ProteinPage({
       </div>
 
       {showCustom && (
-        <section className="rounded-xl bg-[var(--color-card)] border border-[var(--color-border)] p-3 mb-4 flex flex-col gap-2">
-          <div className="flex gap-2">
+        <section className="rounded-xl bg-[var(--color-card)] border border-[var(--color-border)] p-3 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-[var(--color-muted)]">Custom protein entry</span>
+            <button
+              type="button"
+              onClick={() => {
+                setShowCustom(false);
+                setCustomG('');
+                setCustomLabel('');
+              }}
+              aria-label="Close"
+              className="text-[var(--color-muted)] hover:text-[var(--color-bad)] w-7 h-7"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
             <input
               type="number"
               inputMode="numeric"
@@ -154,6 +177,9 @@ export function ProteinPage({
               placeholder="grams"
               value={customG}
               onChange={(e) => setCustomG(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && customG) submitCustom();
+              }}
               autoFocus
               className="w-24 bg-neutral-900 rounded-lg px-3 py-2 tabular-nums outline-none focus:ring-1 focus:ring-emerald-500"
             />
@@ -162,7 +188,10 @@ export function ProteinPage({
               placeholder="label (optional)"
               value={customLabel}
               onChange={(e) => setCustomLabel(e.target.value)}
-              className="flex-1 bg-neutral-900 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-emerald-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && customG) submitCustom();
+              }}
+              className="min-w-0 flex-1 bg-neutral-900 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-emerald-500"
             />
             <button
               type="button"
@@ -173,6 +202,7 @@ export function ProteinPage({
               Add
             </button>
           </div>
+          <p className="text-xs text-[var(--color-muted)] mt-2">Esc to cancel · Enter to save</p>
         </section>
       )}
 

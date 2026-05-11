@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { logPickup, deletePickup, editPickup } from '@/app/actions';
+import { useEscapeKey } from '@/lib/hooks';
 import { todayISO } from '@/lib/date';
 import type { PickupLogEntry } from '@/db/schema';
 
@@ -15,6 +16,8 @@ export function PickupPanel({ initial }: { initial: PickupLogEntry[] }) {
   const [editDur, setEditDur] = useState('');
   const [editN, setEditN] = useState('');
   const [pending, startTransition] = useTransition();
+
+  useEscapeKey(editingId != null, () => setEditingId(null));
 
   function startEdit(e: PickupLogEntry) {
     setEditingId(e.id);
@@ -143,6 +146,17 @@ export function PickupPanel({ initial }: { initial: PickupLogEntry[] }) {
               >
                 {editingId === e.id ? (
                   <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[var(--color-muted)] tabular-nums">{e.date}</span>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        aria-label="Cancel"
+                        className="text-[var(--color-muted)] hover:text-[var(--color-bad)] w-7 h-7"
+                      >
+                        ✕
+                      </button>
+                    </div>
                     <div className="flex gap-2">
                       <button
                         type="button"
@@ -168,6 +182,7 @@ export function PickupPanel({ initial }: { initial: PickupLogEntry[] }) {
                       inputMode="numeric"
                       value={editDur}
                       onChange={(ev) => setEditDur(ev.target.value)}
+                      onKeyDown={(ev) => { if (ev.key === 'Enter') saveEdit(); }}
                       placeholder="duration min"
                       className="bg-neutral-900 rounded-md px-2 py-1 text-sm tabular-nums outline-none focus:ring-1 focus:ring-emerald-500"
                     />
@@ -175,23 +190,17 @@ export function PickupPanel({ initial }: { initial: PickupLogEntry[] }) {
                       type="text"
                       value={editN}
                       onChange={(ev) => setEditN(ev.target.value)}
+                      onKeyDown={(ev) => { if (ev.key === 'Enter') saveEdit(); }}
                       placeholder="notes"
                       className="bg-neutral-900 rounded-md px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-emerald-500"
                     />
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end">
                       <button
                         type="button"
                         onClick={saveEdit}
-                        className="px-2 py-1 rounded-md bg-emerald-500 text-black text-xs font-semibold"
+                        className="px-3 py-1.5 rounded-md bg-emerald-500 text-black text-xs font-semibold"
                       >
                         Save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingId(null)}
-                        className="text-[var(--color-muted)] text-xs"
-                      >
-                        ✕
                       </button>
                     </div>
                   </div>

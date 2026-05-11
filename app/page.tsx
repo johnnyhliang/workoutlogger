@@ -4,6 +4,7 @@ import { SleepToggle } from './components/SleepToggle';
 import { MobilityChecklist } from './components/MobilityChecklist';
 import { DayOverride } from './components/DayOverride';
 import { PickupQuickToggle } from './components/PickupQuickToggle';
+import { DayNotes } from './components/DayNotes';
 import { program, type DayKey } from '@/lib/program';
 import { suggestDayKey, dayLabel } from '@/lib/day-logic';
 import {
@@ -11,7 +12,7 @@ import {
   getWorkoutForDay,
   getSetsForWorkout,
   getLastSessionForExercise,
-  getPickupLog,
+  getDayNote,
 } from '@/db/queries';
 import type { WorkoutSet } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -38,10 +39,10 @@ export default async function Today({
   const lastFridayType = await getLastFridayType();
   const dayKey = override ?? suggestDayKey(weekday, lastFridayType);
 
-  const todayPickups = await db
-    .select()
-    .from(pickupLog)
-    .where(eq(pickupLog.date, date));
+  const [todayPickups, dayNote] = await Promise.all([
+    db.select().from(pickupLog).where(eq(pickupLog.date, date)),
+    getDayNote(date),
+  ]);
 
   if (!dayKey) {
     return (
@@ -57,6 +58,7 @@ export default async function Today({
           </div>
         </div>
         <PickupQuickToggle date={date} today={todayPickups} />
+        <DayNotes date={date} initial={dayNote} />
       </main>
     );
   }
@@ -121,6 +123,7 @@ export default async function Today({
 
       <SleepToggle date={date} dayKey={dayKey} initial={workout?.sleptOk} />
       <PickupQuickToggle date={date} today={todayPickups} />
+      <DayNotes date={date} initial={dayNote} />
       <MobilityChecklist date={date} />
     </main>
   );

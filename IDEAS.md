@@ -71,8 +71,9 @@ These are things SPEC underspecified — keep them in mind while building the li
 ## Infra
 
 - [x] ~~Simple password auth~~ — shipped V1 (`proxy.ts`, cookie-gated, `APP_PASSWORD` env)
+- [ ] **OAuth (Google/GitHub) — if added: also ship an import flow.** When a new user signs in for the first time, offer to import a previously exported Markdown or JSON backup into their new account's DB rows. Without this, switching accounts or devices means losing all history even though backups exist. The export format should be designed with re-import in mind: include table name + schema version headers so the import parser can validate and map columns correctly.
 - [ ] Export all data as JSON (one server action; cheap insurance against data loss)
-- [ ] Import from JSON
+- [ ] Import from JSON (prerequisite for OAuth multi-account support above)
 - [ ] Backup script that dumps Turso to a file weekly
 - [ ] Multi-device sync indicator
 - [ ] Conflict resolution if two devices edit same workout

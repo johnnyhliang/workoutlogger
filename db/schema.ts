@@ -90,6 +90,7 @@ export const bodyLog = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     date: text('date').notNull(),
     weightLb: real('weight_lb').notNull(),
+    bodyFatPct: real('body_fat_pct'),
     photoUrl: text('photo_url'),
     notes: text('notes'),
     createdAt: integer('created_at')
@@ -98,6 +99,33 @@ export const bodyLog = sqliteTable(
   },
   (t) => [index('body_log_date_idx').on(t.date)],
 );
+
+export const dayNotes = sqliteTable('day_notes', {
+  date: text('date').primaryKey(),
+  note: text('note').notNull(),
+  updatedAt: integer('updated_at')
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
+export const customExercises = sqliteTable('custom_exercises', {
+  key: text('key').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  category: text('category'),
+  videoUrl: text('video_url'),
+  createdAt: integer('created_at')
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
+export const guideContent = sqliteTable('guide_content', {
+  id: integer('id').primaryKey(), // singleton; always 1
+  content: text('content').notNull(),
+  updatedAt: integer('updated_at')
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
 
 export type Workout = typeof workouts.$inferSelect;
 export type NewWorkout = typeof workouts.$inferInsert;
@@ -111,3 +139,6 @@ export type VertLogEntry = typeof vertLog.$inferSelect;
 export type NewVertLogEntry = typeof vertLog.$inferInsert;
 export type PickupLogEntry = typeof pickupLog.$inferSelect;
 export type NewPickupLogEntry = typeof pickupLog.$inferInsert;
+export type DayNote = typeof dayNotes.$inferSelect;
+export type CustomExercise = typeof customExercises.$inferSelect;
+export type GuideContent = typeof guideContent.$inferSelect;

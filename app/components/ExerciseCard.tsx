@@ -6,6 +6,7 @@ import { exerciseName } from '@/lib/program';
 import type { WorkoutSet } from '@/db/schema';
 import { logSet, deleteSet } from '@/app/actions';
 import { startRest } from './RestTimer';
+import { useEscapeKey } from '@/lib/hooks';
 
 type LastSession = { date: string; sets: WorkoutSet[] } | null;
 
@@ -102,6 +103,13 @@ export function ExerciseCard({
 
   // Re-sync when active swap or existing sets change
   useEffect(() => setRows(initialRows), [initialRows]);
+
+  // Esc cancels any in-progress edit on this card
+  const hasEditing = rows.some((r) => r.editing);
+  useEscapeKey(hasEditing, () => {
+    setRows((rs) => rs.map((r) => (r.editing ? { ...r, editing: false, saved: !!r.id } : r)));
+  });
+  useEscapeKey(showSwap, () => setShowSwap(false));
 
   // Beat last week: compare working sets only
   const lastTop = lastSession ? topSet(lastSession.sets) : null;
@@ -342,6 +350,7 @@ export function ExerciseCard({
                   value={row.weight}
                   readOnly={readOnly}
                   onChange={(e) => updateRow(idx, 'weight', e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && row.reps) saveRow(idx); }}
                   className={`w-16 h-9 text-center bg-neutral-900 rounded-md text-lg tabular-nums font-semibold outline-none focus:ring-1 focus:ring-emerald-500 ${
                     readOnly ? 'opacity-70' : ''
                   }`}
@@ -375,6 +384,7 @@ export function ExerciseCard({
                   value={row.reps}
                   readOnly={readOnly}
                   onChange={(e) => updateRow(idx, 'reps', e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && row.reps) saveRow(idx); }}
                   className={`w-12 h-9 text-center bg-neutral-900 rounded-md text-lg tabular-nums font-semibold outline-none focus:ring-1 focus:ring-emerald-500 ${
                     readOnly ? 'opacity-70' : ''
                   }`}

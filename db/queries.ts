@@ -1,5 +1,14 @@
 import { db } from './client';
-import { workouts, sets, meals, bodyLog, vertLog, pickupLog } from './schema';
+import {
+  workouts,
+  sets,
+  meals,
+  bodyLog,
+  vertLog,
+  pickupLog,
+  dayNotes,
+  customExercises,
+} from './schema';
 import { and, desc, eq, sql, inArray } from 'drizzle-orm';
 import type { DayKey } from '@/lib/program';
 
@@ -112,6 +121,15 @@ export async function getPickupLog(limit = 50) {
     .from(pickupLog)
     .orderBy(desc(pickupLog.date), desc(pickupLog.id))
     .limit(limit);
+}
+
+export async function getDayNote(date: string): Promise<string | null> {
+  const rows = await db.select().from(dayNotes).where(eq(dayNotes.date, date)).limit(1);
+  return rows[0]?.note ?? null;
+}
+
+export async function getCustomExercises() {
+  return db.select().from(customExercises).orderBy(customExercises.name);
 }
 
 export async function getExerciseHistory(exerciseKey: string, limit = 20) {

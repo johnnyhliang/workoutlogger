@@ -1,6 +1,10 @@
 # Lift Tracker
 
-Personal training + nutrition tracker. Built for me, by me (and Claude Code).
+Personal training + nutrition tracker. Built for me, by me (and claude)
+
+works better for me than any workout app, no setup no bs, if you use it yourself ymmv
+
+as maybe i adapt to use this with less brainpower and time i may add features that make it more inaccessible but i trust you are good enough to make changes for yourself
 
 ## Quick start
 
@@ -24,7 +28,9 @@ pnpm dev
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fjohnnyhliang%2Fworkoutlogger&env=APP_PASSWORD,TURSO_DATABASE_URL,TURSO_AUTH_TOKEN&envDescription=APP_PASSWORD%20is%20your%20login%20password.%20TURSO_DATABASE_URL%20and%20TURSO_AUTH_TOKEN%20come%20from%20your%20Turso%20dashboard.)
 
-Push to main. Vercel auto-deploys. Make sure env vars are set in Vercel dashboard.
+If you are extra lazy just clone the github repo and/or click the deploy button - literally one click and all you need are env vars (you need to set a password)
+
+postgres DB is free from turso
 
 ## Files
 
@@ -42,4 +48,4 @@ Push to main. Vercel auto-deploys. Make sure env vars are set in Vercel dashboar
 
 ## Goals
 
-Vert + upper body aesthetics + stability under contact + athletic coordination. See SPEC.md for the program.
+Vert + upper body aesthetics + stability under contact + athletic coordination. See SPEC.md for the program

@@ -104,11 +104,13 @@ export async function logProtein(input: { date: string; proteinG: number; source
     note: input.note ?? null,
   });
   revalidatePath('/meals');
+  revalidatePath('/history');
 }
 
 export async function deleteProtein(id: number) {
   await db.delete(meals).where(eq(meals.id, id));
   revalidatePath('/meals');
+  revalidatePath('/history');
 }
 
 export async function editProtein(input: {
@@ -122,6 +124,7 @@ export async function editProtein(input: {
     .set({ proteinG: input.proteinG, source: input.source, note: input.note ?? null })
     .where(eq(meals.id, input.id));
   revalidatePath('/meals');
+  revalidatePath('/history');
 }
 
 export async function logBodyWeight(input: {
@@ -137,11 +140,13 @@ export async function logBodyWeight(input: {
     notes: input.notes ?? null,
   });
   revalidatePath('/weight');
+  revalidatePath('/history');
 }
 
 export async function deleteBodyWeight(id: number) {
   await db.delete(bodyLog).where(eq(bodyLog.id, id));
   revalidatePath('/weight');
+  revalidatePath('/history');
 }
 
 export async function editBodyWeight(input: {
@@ -159,6 +164,7 @@ export async function editBodyWeight(input: {
     })
     .where(eq(bodyLog.id, input.id));
   revalidatePath('/weight');
+  revalidatePath('/history');
 }
 
 export async function logVert(input: { date: string; vertIn: number; notes?: string }) {
@@ -168,11 +174,13 @@ export async function logVert(input: { date: string; vertIn: number; notes?: str
     notes: input.notes ?? null,
   });
   revalidatePath('/vert');
+  revalidatePath('/history');
 }
 
 export async function deleteVert(id: number) {
   await db.delete(vertLog).where(eq(vertLog.id, id));
   revalidatePath('/vert');
+  revalidatePath('/history');
 }
 
 export async function editVert(input: { id: number; vertIn: number; notes?: string | null }) {
@@ -181,6 +189,7 @@ export async function editVert(input: { id: number; vertIn: number; notes?: stri
     .set({ vertIn: input.vertIn, notes: input.notes ?? null })
     .where(eq(vertLog.id, input.id));
   revalidatePath('/vert');
+  revalidatePath('/history');
 }
 
 export async function logPickup(input: {
@@ -197,12 +206,14 @@ export async function logPickup(input: {
   });
   revalidatePath('/pickup');
   revalidatePath('/');
+  revalidatePath('/history');
 }
 
 export async function deletePickup(id: number) {
   await db.delete(pickupLog).where(eq(pickupLog.id, id));
   revalidatePath('/pickup');
   revalidatePath('/');
+  revalidatePath('/history');
 }
 
 export async function editPickup(input: {
@@ -216,6 +227,7 @@ export async function editPickup(input: {
     .set({ sport: input.sport, durationMin: input.durationMin, notes: input.notes ?? null })
     .where(eq(pickupLog.id, input.id));
   revalidatePath('/pickup');
+  revalidatePath('/history');
 }
 
 export async function setDayNote(date: string, note: string) {

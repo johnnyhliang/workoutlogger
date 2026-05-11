@@ -102,13 +102,19 @@ export function WeightPanel({ initial }: { initial: BodyLogEntry[] }) {
   return (
     <main className="px-4 pt-6">
       <h1 className="text-3xl font-bold mb-1">Body</h1>
-      <nav className="text-xs text-[var(--color-muted)] mb-4 flex gap-3 flex-wrap">
-        <a href="/vert" className="underline">Vert →</a>
-        <a href="/pickup" className="underline">Pickup →</a>
-        <a href="/plates" className="underline">Plates →</a>
-        <a href="/custom" className="underline">Custom →</a>
-        <a href="/guide" className="underline">Guide →</a>
-        <a href="/export" className="underline">Export →</a>
+      <nav className="mb-4 flex gap-2 flex-wrap">
+        {[
+          ['/vert', 'Vert'],
+          ['/pickup', 'Pickup'],
+          ['/plates', 'Plates'],
+          ['/custom', 'Custom'],
+          ['/guide', 'Guide'],
+          ['/export', 'Export'],
+        ].map(([href, label]) => (
+          <a key={href} href={href} className="px-2.5 py-1 rounded-lg bg-neutral-900 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)] border border-[var(--color-border)]">
+            {label}
+          </a>
+        ))}
       </nav>
 
       <section className="rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] p-4 mb-4">

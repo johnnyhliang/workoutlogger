@@ -149,9 +149,10 @@ function Header({
           {dayKey ? dayLabel(dayKey) : 'Rest Day'}
         </h1>
       </div>
-      <nav className="flex gap-3 text-xs text-[var(--color-muted)] pt-2 shrink-0">
-        <a href="/plates" className="underline">Plates</a>
-        <a href="/guide" className="underline">Guide</a>
+      <nav className="flex gap-2 pt-1 shrink-0">
+        <a href={`/custom?d=${date}`} className="px-2.5 py-1 rounded-lg bg-neutral-900 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)] border border-[var(--color-border)]">Custom</a>
+        <a href="/plates" className="px-2.5 py-1 rounded-lg bg-neutral-900 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)] border border-[var(--color-border)]">Plates</a>
+        <a href="/guide" className="px-2.5 py-1 rounded-lg bg-neutral-900 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)] border border-[var(--color-border)]">Guide</a>
       </nav>
     </header>
   );

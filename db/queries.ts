@@ -19,6 +19,7 @@ import {
   dayNotes,
   customExercises,
   mobilityConfig,
+  mealsConfig,
 } from './schema';
 import { and, desc, eq, sql, inArray } from 'drizzle-orm';
 import type { DayKey } from '@/lib/program';
@@ -142,6 +143,30 @@ export async function getMobilityExercises(): Promise<MobilityExercise[]> {
     return JSON.parse(rows[0].exercises) as MobilityExercise[];
   } catch {
     return DEFAULT_MOBILITY;
+  }
+}
+
+export type ProteinPreset = { label: string; protein: number; source: string };
+
+const DEFAULT_PRESETS: ProteinPreset[] = [
+  { label: '3 eggs', protein: 21, source: 'eggs' },
+  { label: '4 eggs', protein: 28, source: 'eggs' },
+  { label: 'Chicken (palm)', protein: 35, source: 'chicken' },
+  { label: 'Beef (palm)', protein: 35, source: 'beef' },
+  { label: 'Fish (palm)', protein: 30, source: 'fish' },
+  { label: 'Greek yogurt cup', protein: 20, source: 'yogurt' },
+  { label: 'Cottage cheese cup', protein: 25, source: 'yogurt' },
+  { label: 'Whey shake', protein: 25, source: 'shake' },
+  { label: 'Tuna can', protein: 30, source: 'fish' },
+];
+
+export async function getMealsConfig(): Promise<{ presets: ProteinPreset[]; goalG: number }> {
+  const rows = await db.select().from(mealsConfig).limit(1);
+  if (!rows[0]) return { presets: DEFAULT_PRESETS, goalG: 180 };
+  try {
+    return { presets: JSON.parse(rows[0].presets) as ProteinPreset[], goalG: rows[0].goalG };
+  } catch {
+    return { presets: DEFAULT_PRESETS, goalG: 180 };
   }
 }
 

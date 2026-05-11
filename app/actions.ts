@@ -14,8 +14,9 @@ import {
   customExercises,
   guideContent,
   mobilityConfig,
+  mealsConfig,
 } from '@/db/schema';
-import type { MobilityExercise } from '@/db/queries';
+import type { MobilityExercise, ProteinPreset } from '@/db/queries';
 import type { DayKey } from '@/lib/program';
 
 async function ensureWorkout(date: string, dayKey: string): Promise<number> {
@@ -301,6 +302,17 @@ export async function saveMobilityConfig(exercises: MobilityExercise[]) {
   }
   revalidatePath('/');
   revalidatePath('/custom');
+}
+
+export async function saveMealsConfig(presets: ProteinPreset[], goalG: number) {
+  const json = JSON.stringify(presets);
+  const existing = await db.select({ id: mealsConfig.id }).from(mealsConfig).limit(1);
+  if (existing[0]) {
+    await db.update(mealsConfig).set({ presets: json, goalG, updatedAt: Date.now() }).where(eq(mealsConfig.id, existing[0].id));
+  } else {
+    await db.insert(mealsConfig).values({ id: 1, presets: json, goalG });
+  }
+  revalidatePath('/meals');
 }
 
 export async function logoutAction() {

@@ -133,6 +133,13 @@ export const guideContent = sqliteTable('guide_content', {
     .default(sql`(unixepoch() * 1000)`),
 });
 
+export const mealsConfig = sqliteTable('meals_config', {
+  id: integer('id').primaryKey(), // singleton; always 1
+  presets: text('presets').notNull(),
+  goalG: integer('goal_g').notNull().default(180),
+  updatedAt: integer('updated_at').notNull().default(sql`(unixepoch() * 1000)`),
+});
+
 export type Workout = typeof workouts.$inferSelect;
 export type NewWorkout = typeof workouts.$inferInsert;
 export type WorkoutSet = typeof sets.$inferSelect;
@@ -149,3 +156,4 @@ export type DayNote = typeof dayNotes.$inferSelect;
 export type CustomExercise = typeof customExercises.$inferSelect;
 export type GuideContent = typeof guideContent.$inferSelect;
 export type MobilityConfig = typeof mobilityConfig.$inferSelect;
+export type MealsConfig = typeof mealsConfig.$inferSelect;

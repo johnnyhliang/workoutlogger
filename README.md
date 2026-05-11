@@ -22,6 +22,8 @@ pnpm dev
 
 ## Deploy
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fjohnnyhliang%2Fworkoutlogger&env=APP_PASSWORD,TURSO_DATABASE_URL,TURSO_AUTH_TOKEN&envDescription=APP_PASSWORD%20is%20your%20login%20password.%20TURSO_DATABASE_URL%20and%20TURSO_AUTH_TOKEN%20come%20from%20your%20Turso%20dashboard.)
+
 Push to main. Vercel auto-deploys. Make sure env vars are set in Vercel dashboard.
 
 ## Files

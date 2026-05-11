@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createHash } from 'crypto';
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -7,8 +8,10 @@ export function middleware(req: NextRequest) {
   // Allow login page and its action through
   if (pathname === '/login') return NextResponse.next();
 
+  const password = process.env.APP_PASSWORD;
+  const expected = password ? createHash('sha256').update(password).digest('hex') : null;
   const cookie = req.cookies.get('app_auth')?.value;
-  if (cookie === process.env.APP_PASSWORD) return NextResponse.next();
+  if (expected && cookie === expected) return NextResponse.next();
 
   const login = req.nextUrl.clone();
   login.pathname = '/login';

@@ -1,7 +1,12 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { createHash } from 'crypto';
 
 const COOKIE_NAME = 'app_auth';
+
+function hashPassword(pw: string) {
+  return createHash('sha256').update(pw).digest('hex');
+}
 
 async function login(formData: FormData) {
   'use server';
@@ -13,7 +18,7 @@ async function login(formData: FormData) {
 
   if (submitted === password) {
     const jar = await cookies();
-    jar.set(COOKIE_NAME, password, {
+    jar.set(COOKIE_NAME, hashPassword(password), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

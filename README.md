@@ -2,7 +2,7 @@
 
 Personal training + nutrition tracker. Built for me, by me (and claude)
 
-works better for me than any workout app, no setup no bs, if you use it yourself ymmv
+works better for me than any workout app, no setup no bs (a preliminary version of my program is preloaded, as well as nutrition presets, but these should be editable), if you use it yourself ymmv
 
 as maybe i adapt to use this with less brainpower and time i may add features that make it more inaccessible but i trust you are good enough to make changes for yourself
 

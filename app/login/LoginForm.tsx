@@ -3,6 +3,39 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { loginAction } from './actions';
 
+const EASTER_EGG_LINES = [
+  "you're not johnny",
+  "get out",
+  "wrong house",
+  "leave.",
+  "shoo",
+];
+
+function WanderingGhost() {
+  const [pos, setPos] = useState({ x: 10, y: 85 });
+  const [lineIdx, setLineIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPos({
+        x: 5 + Math.random() * 88,
+        y: 80 + Math.random() * 15,
+      });
+      if (Math.random() < 0.3) setLineIdx((i) => (i + 1) % EASTER_EGG_LINES.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <p
+      className="fixed text-[9px] text-neutral-800 select-none pointer-events-none transition-all duration-[3000ms] ease-in-out"
+      style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+    >
+      {EASTER_EGG_LINES[lineIdx]}
+    </p>
+  );
+}
+
 const WRONG_MESSAGES = [
   'Nope.',
   'lol no',
@@ -86,9 +119,9 @@ export function LoginForm({ next }: { next: string }) {
   const buttonLabel = BUTTON_LABELS[Math.min(attempts, BUTTON_LABELS.length - 1)];
   const errorMsg = attempts > 0 ? WRONG_MESSAGES[msgIndex] : null;
 
-  const hovesLeft = isBlockMode && !unblocked ? 5 - (hoverEnterCount % 5) : null;
-
   return (
+    <>
+    <WanderingGhost />
     <form
       action={action}
       className={`w-full flex flex-col gap-4 ${shaking ? 'animate-shake' : ''}`}
@@ -121,7 +154,7 @@ export function LoginForm({ next }: { next: string }) {
         />
         {showBlockedOverlay && (
           <div className="absolute inset-0 rounded-lg bg-neutral-900 border border-red-900 flex items-center justify-center text-sm text-red-400 cursor-not-allowed select-none">
-            🔒 {hovesLeft !== null ? `hover ${hovesLeft}x to unlock` : 'blocked'}
+            🔒
           </div>
         )}
         {isBlockMode && unblocked && (
@@ -154,5 +187,6 @@ export function LoginForm({ next }: { next: string }) {
         {isPending ? 'Checking...' : buttonLabel}
       </button>
     </form>
+    </>
   );
 }

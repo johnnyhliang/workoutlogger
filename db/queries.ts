@@ -99,14 +99,6 @@ export async function getProteinForRange(startDate: string, endDate: string) {
   return rows;
 }
 
-export async function getRecentWorkouts(limit = 30) {
-  return db
-    .select()
-    .from(workouts)
-    .orderBy(desc(workouts.date), desc(workouts.id))
-    .limit(limit);
-}
-
 export async function getBodyLog(limit = 50) {
   return db.select().from(bodyLog).orderBy(desc(bodyLog.date), desc(bodyLog.id)).limit(limit);
 }

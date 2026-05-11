@@ -280,13 +280,13 @@ export async function saveCustomExercise(input: {
     });
   }
   revalidatePath('/custom');
-  revalidatePath('/exercises');
+  revalidatePath('/custom');
 }
 
 export async function deleteCustomExercise(key: string) {
   await db.delete(customExercises).where(eq(customExercises.key, key));
   revalidatePath('/custom');
-  revalidatePath('/exercises');
+  revalidatePath('/custom');
 }
 
 export async function saveGuide(content: string) {

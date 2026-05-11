@@ -158,16 +158,10 @@ export function HistoryDashboard({
     );
   }
 
-  // Month calendar view helpers
   function buildMonthCalendar() {
-    const d = new Date(today);
-    d.setDate(d.getDate() - 29);
-    d.setDate(1); // start of that month
-    // Actually just do last 30 days grouped by week rows
     const days: { iso: string; day: number }[] = [];
     const start = new Date(today); start.setDate(today.getDate() - 29);
     const c = new Date(start);
-    // Pad to Monday
     const dow = (c.getDay() + 6) % 7;
     c.setDate(c.getDate() - dow);
     while (c <= today || days.length % 7 !== 0) {
@@ -180,6 +174,8 @@ export function HistoryDashboard({
     return rows;
   }
 
+  const todayISO = today.toISOString().slice(0, 10);
+  const d30ISO = (() => { const d = new Date(today); d.setDate(d.getDate() - 29); return d.toISOString().slice(0, 10); })();
   const calRows = buildMonthCalendar();
   const workoutLimit = period === 'week' ? 7 : 30;
   const recentWorkoutsSlice = workouts.slice(0, workoutLimit);
@@ -367,11 +363,11 @@ export function HistoryDashboard({
             {calRows.map((row, ri) => (
               <div key={ri} className="grid grid-cols-7 gap-1">
                 {row.map((cell, ci) => {
-                  const isInLast30 = cell.iso >= (() => { const d = new Date(today); d.setDate(d.getDate() - 29); return d.toISOString().slice(0, 10); })() && cell.iso <= today.toISOString().slice(0, 10);
+                  const isInLast30 = cell.iso >= d30ISO && cell.iso <= todayISO;
                   const w = workoutByDate.get(cell.iso);
                   const p = pickupsByDate.get(cell.iso);
-                  const hasActivity = w || (p?.length);
-                  const isToday = cell.iso === today.toISOString().slice(0, 10);
+                  const hasActivity = w || p?.length;
+                  const isToday = cell.iso === todayISO;
                   return (
                     <button
                       key={ci}

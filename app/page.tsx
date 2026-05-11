@@ -137,13 +137,19 @@ function Header({
 }) {
   const cap = weekday ? weekday[0].toUpperCase() + weekday.slice(1) : '';
   return (
-    <header className="mb-4">
-      <p className="text-xs text-[var(--color-muted)] tabular-nums">
-        {cap} · {date}
-      </p>
-      <h1 className="text-3xl font-bold tracking-tight">
-        {dayKey ? dayLabel(dayKey) : 'Rest Day'}
-      </h1>
+    <header className="mb-4 flex items-start justify-between">
+      <div>
+        <p className="text-xs text-[var(--color-muted)] tabular-nums">
+          {cap} · {date}
+        </p>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {dayKey ? dayLabel(dayKey) : 'Rest Day'}
+        </h1>
+      </div>
+      <nav className="flex gap-3 text-xs text-[var(--color-muted)] pt-2 shrink-0">
+        <a href="/plates" className="underline">Plates</a>
+        <a href="/guide" className="underline">Guide</a>
+      </nav>
     </header>
   );
 }

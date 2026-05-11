@@ -71,6 +71,7 @@ export function VertPanel({ initial }: { initial: VertLogEntry[] }) {
   return (
     <main className="px-4 pt-6">
       <h1 className="text-3xl font-bold mb-1">Vert</h1>
+      <p className="text-xs text-[var(--color-muted)] mb-4 italic">Remember: train grip strength — Farmer Carries, dead hangs, thick bar work.</p>
       <p className="text-xs text-[var(--color-muted)] mb-4">
         Test once a week or biweekly. Best ever: <span className="font-mono">{best || '—'}″</span>
       </p>

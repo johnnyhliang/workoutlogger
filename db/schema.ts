@@ -119,6 +119,12 @@ export const customExercises = sqliteTable('custom_exercises', {
     .default(sql`(unixepoch() * 1000)`),
 });
 
+export const mobilityConfig = sqliteTable('mobility_config', {
+  id: integer('id').primaryKey(),
+  exercises: text('exercises').notNull(),
+  updatedAt: integer('updated_at').notNull().default(sql`(unixepoch() * 1000)`),
+});
+
 export const guideContent = sqliteTable('guide_content', {
   id: integer('id').primaryKey(), // singleton; always 1
   content: text('content').notNull(),
@@ -142,3 +148,4 @@ export type NewPickupLogEntry = typeof pickupLog.$inferInsert;
 export type DayNote = typeof dayNotes.$inferSelect;
 export type CustomExercise = typeof customExercises.$inferSelect;
 export type GuideContent = typeof guideContent.$inferSelect;
+export type MobilityConfig = typeof mobilityConfig.$inferSelect;

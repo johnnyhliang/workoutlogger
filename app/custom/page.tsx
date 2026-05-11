@@ -4,7 +4,7 @@ import { db } from '@/db/client';
 import { workouts, sets } from '@/db/schema';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { program } from '@/lib/program';
-import { getCustomExercises } from '@/db/queries';
+import { getCustomExercises, getMobilityExercises } from '@/db/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,8 +26,9 @@ export default async function CustomPage({
     ? await db.select().from(sets).where(eq(sets.workoutId, today[0].id))
     : [];
 
-  const [customExercises, recentRows] = await Promise.all([
+  const [customExercises, mobilityExercises, recentRows] = await Promise.all([
     getCustomExercises(),
+    getMobilityExercises(),
     db
       .selectDistinct({ key: sets.exerciseKey })
       .from(sets)
@@ -65,6 +66,7 @@ export default async function CustomPage({
         existingSets={setsToday}
         suggestions={suggestions}
         savedExercises={customExercises}
+        mobilityExercises={mobilityExercises}
       />
     </main>
   );

@@ -185,21 +185,16 @@ export function ExerciseCard({
 
   function removeRow(idx: number) {
     const row = rows[idx];
+    function spliceAndRenumber(rs: SetRow[]) {
+      return rs.filter((_, i) => i !== idx).map((r, i) => ({ ...r, setNumber: i + 1 }));
+    }
     if (!row.id) {
-      setRows((rs) =>
-        rs.map((r, i) =>
-          i === idx ? { ...r, weight: '', reps: '', saved: false, editing: false, id: undefined, isWarmup: false } : r,
-        ),
-      );
+      setRows(spliceAndRenumber);
       return;
     }
     startTransition(async () => {
       await deleteSet(row.id!);
-      setRows((rs) =>
-        rs.map((r, i) =>
-          i === idx ? { ...r, weight: '', reps: '', saved: false, editing: false, id: undefined, isWarmup: false } : r,
-        ),
-      );
+      setRows(spliceAndRenumber);
     });
   }
 

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { program } from '@/lib/program';
+import type { MobilityExercise } from '@/db/queries';
 
-export function MobilityChecklist({ date }: { date: string }) {
+export function MobilityChecklist({ date, exercises }: { date: string; exercises: MobilityExercise[] }) {
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
@@ -19,18 +19,16 @@ export function MobilityChecklist({ date }: { date: string }) {
     }
   }, [storageKey]);
 
-  function toggle(name: string) {
+  function toggle(key: string) {
     setChecked((prev) => {
-      const next = { ...prev, [name]: !prev[name] };
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(next));
-      } catch {}
+      const next = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch {}
       return next;
     });
   }
 
-  const done = program.daily_mobility.filter((m) => checked[m.name]).length;
-  const total = program.daily_mobility.length;
+  const done = exercises.filter((m) => checked[m.key]).length;
+  const total = exercises.length;
 
   return (
     <section className="rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] mb-3 overflow-hidden">
@@ -47,19 +45,24 @@ export function MobilityChecklist({ date }: { date: string }) {
       </button>
       {open && (
         <ul className="px-4 pb-4 flex flex-col gap-2">
-          {program.daily_mobility.map((m) => (
-            <li key={m.name}>
-              <label className="flex items-center gap-3 py-1 cursor-pointer">
+          {exercises.map((m) => (
+            <li key={m.key}>
+              <label className="flex items-start gap-3 py-1 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={!!checked[m.name]}
-                  onChange={() => toggle(m.name)}
-                  className="w-5 h-5 accent-emerald-500"
+                  checked={!!checked[m.key]}
+                  onChange={() => toggle(m.key)}
+                  className="w-5 h-5 mt-0.5 accent-emerald-500 shrink-0"
                 />
-                <span className={checked[m.name] ? 'line-through text-[var(--color-muted)]' : ''}>
-                  {m.name}{' '}
-                  <span className="text-xs text-[var(--color-muted)]">— {m.reps}</span>
-                </span>
+                <div>
+                  <span className={checked[m.key] ? 'line-through text-[var(--color-muted)]' : ''}>
+                    {m.name}{' '}
+                    <span className="text-xs text-[var(--color-muted)]">— {m.reps}</span>
+                  </span>
+                  {m.description && (
+                    <p className="text-xs text-[var(--color-muted)] mt-0.5 whitespace-pre-wrap">{m.description}</p>
+                  )}
+                </div>
               </label>
             </li>
           ))}

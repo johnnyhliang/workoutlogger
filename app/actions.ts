@@ -13,7 +13,9 @@ import {
   dayNotes,
   customExercises,
   guideContent,
+  mobilityConfig,
 } from '@/db/schema';
+import type { MobilityExercise } from '@/db/queries';
 import type { DayKey } from '@/lib/program';
 
 async function ensureWorkout(date: string, dayKey: string): Promise<number> {
@@ -286,6 +288,18 @@ export async function saveCustomExercise(input: {
 export async function deleteCustomExercise(key: string) {
   await db.delete(customExercises).where(eq(customExercises.key, key));
   revalidatePath('/custom');
+  revalidatePath('/custom');
+}
+
+export async function saveMobilityConfig(exercises: MobilityExercise[]) {
+  const json = JSON.stringify(exercises);
+  const existing = await db.select({ id: mobilityConfig.id }).from(mobilityConfig).limit(1);
+  if (existing[0]) {
+    await db.update(mobilityConfig).set({ exercises: json, updatedAt: Date.now() }).where(eq(mobilityConfig.id, existing[0].id));
+  } else {
+    await db.insert(mobilityConfig).values({ id: 1, exercises: json });
+  }
+  revalidatePath('/');
   revalidatePath('/custom');
 }
 

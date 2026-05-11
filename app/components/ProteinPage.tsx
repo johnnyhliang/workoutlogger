@@ -71,8 +71,13 @@ export function ProteinPage({
 
   function submitCustom() {
     const g = Number(customG);
-    if (!Number.isFinite(g) || g <= 0) return;
-    add(customLabel || 'custom', Math.round(g), 'custom');
+    if (!Number.isFinite(g) || g <= 0 || !date) return;
+    const note = customLabel.trim() || null;
+    startTransition(async () => {
+      await logProtein({ date, proteinG: Math.round(g), source: 'custom', note: note ?? undefined });
+      setEntries((es) => [{ id: -Date.now(), date, proteinG: Math.round(g), source: 'custom', note, createdAt: Date.now() }, ...es]);
+      setTotal((t) => t + Math.round(g));
+    });
     setCustomG('');
     setCustomLabel('');
     setShowCustom(false);

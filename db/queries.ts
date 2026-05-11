@@ -1,4 +1,14 @@
 import { db } from './client';
+
+export type MobilityExercise = { key: string; name: string; reps: string; description: string | null };
+
+const DEFAULT_MOBILITY: MobilityExercise[] = [
+  { key: 'band_pull_aparts', name: 'Band Pull-aparts', reps: '50', description: null },
+  { key: 'external_rotations', name: 'External Rotations', reps: '20 each side', description: null },
+  { key: 'shoulder_dislocates', name: 'Shoulder Dislocates', reps: '10', description: null },
+  { key: 'sleeper_stretch', name: 'Sleeper Stretch', reps: '1 min each side', description: null },
+  { key: 'deep_squat_hold', name: 'Deep Squat Hold', reps: '60 sec', description: null },
+];
 import {
   workouts,
   sets,
@@ -8,6 +18,7 @@ import {
   pickupLog,
   dayNotes,
   customExercises,
+  mobilityConfig,
 } from './schema';
 import { and, desc, eq, sql, inArray } from 'drizzle-orm';
 import type { DayKey } from '@/lib/program';
@@ -122,6 +133,16 @@ export async function getDayNote(date: string): Promise<string | null> {
 
 export async function getCustomExercises() {
   return db.select().from(customExercises).orderBy(customExercises.name);
+}
+
+export async function getMobilityExercises(): Promise<MobilityExercise[]> {
+  const rows = await db.select().from(mobilityConfig).limit(1);
+  if (!rows[0]) return DEFAULT_MOBILITY;
+  try {
+    return JSON.parse(rows[0].exercises) as MobilityExercise[];
+  } catch {
+    return DEFAULT_MOBILITY;
+  }
 }
 
 export async function getExerciseHistory(exerciseKey: string, limit = 20) {

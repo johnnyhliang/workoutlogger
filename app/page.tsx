@@ -1,5 +1,6 @@
 import { DateRedirect } from './components/DateRedirect';
 import { ExerciseCard } from './components/ExerciseCard';
+import { CustomExerciseSection } from './components/CustomExerciseSection';
 import { SleepToggle } from './components/SleepToggle';
 import { MobilityChecklist } from './components/MobilityChecklist';
 import { DayOverride } from './components/DayOverride';
@@ -13,6 +14,8 @@ import {
   getSetsForWorkout,
   getLastSessionForExercise,
   getDayNote,
+  getCustomExercises,
+  getMobilityExercises,
 } from '@/db/queries';
 import type { WorkoutSet } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -39,9 +42,11 @@ export default async function Today({
   const lastFridayType = await getLastFridayType();
   const dayKey = override ?? suggestDayKey(weekday, lastFridayType);
 
-  const [todayPickups, dayNote] = await Promise.all([
+  const [todayPickups, dayNote, customExercises, mobilityExercises] = await Promise.all([
     db.select().from(pickupLog).where(eq(pickupLog.date, date)),
     getDayNote(date),
+    getCustomExercises(),
+    getMobilityExercises(),
   ]);
 
   if (!dayKey) {
@@ -73,6 +78,8 @@ export default async function Today({
   }
 
   const exercises = program.workouts[dayKey].exercises;
+  const programKeys = new Set(exercises.flatMap((e) => [e.key, ...(e.swaps ?? [])]));
+  const extraSets = allSets.filter((s) => !programKeys.has(s.exerciseKey));
 
   // Beat-last-week: query last session per default exercise key
   // (ignores swaps; "compare same key" is the rule from IDEAS).
@@ -121,10 +128,12 @@ export default async function Today({
         />
       ))}
 
+      <CustomExerciseSection date={date} savedExercises={customExercises} existingSets={extraSets} />
+
       <SleepToggle date={date} dayKey={dayKey} initial={workout?.sleptOk} />
       <PickupQuickToggle date={date} today={todayPickups} />
       <DayNotes date={date} initial={dayNote} />
-      <MobilityChecklist date={date} />
+      <MobilityChecklist date={date} exercises={mobilityExercises} />
     </main>
   );
 }

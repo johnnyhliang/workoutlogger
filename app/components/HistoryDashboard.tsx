@@ -29,6 +29,34 @@ export function HistoryDashboard({
   const [period, setPeriod] = useState<'week' | 'month'>('week');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const gridScrollRef = useRef<HTMLDivElement>(null);
+  const dragState = useRef<{ active: boolean; startX: number; scrollLeft: number }>({ active: false, startX: 0, scrollLeft: 0 });
+
+  useEffect(() => {
+    if (gridScrollRef.current) {
+      gridScrollRef.current.scrollLeft = gridScrollRef.current.scrollWidth;
+    }
+  }, []);
+
+  function onGridMouseDown(e: React.MouseEvent) {
+    if (!gridScrollRef.current) return;
+    dragState.current = { active: true, startX: e.clientX, scrollLeft: gridScrollRef.current.scrollLeft };
+    gridScrollRef.current.style.cursor = 'grabbing';
+    gridScrollRef.current.style.userSelect = 'none';
+  }
+  function onGridMouseMove(e: React.MouseEvent) {
+    if (!dragState.current.active || !gridScrollRef.current) return;
+    gridScrollRef.current.scrollLeft = dragState.current.scrollLeft - (e.clientX - dragState.current.startX);
+  }
+  function onGridMouseUp() {
+    dragState.current.active = false;
+    if (gridScrollRef.current) { gridScrollRef.current.style.cursor = 'grab'; gridScrollRef.current.style.userSelect = ''; }
+  }
+  function onGridWheel(e: React.WheelEvent) {
+    if (!gridScrollRef.current) return;
+    e.preventDefault();
+    gridScrollRef.current.scrollLeft += e.deltaY !== 0 ? e.deltaY : e.deltaX;
+  }
 
   // Build lookup maps
   const workoutByDate = new Map(workouts.map((w) => [w.date, w]));
@@ -193,17 +221,16 @@ export function HistoryDashboard({
       {/* Contribution grid */}
       <section className="mb-5">
         <h2 className="text-sm font-semibold mb-2">Activity — past year</h2>
-        <div className="overflow-x-auto pb-1">
-          <div className="flex mb-1">
-            {weeks.map((_, col) => {
-              const lbl = monthLabels.find((m) => m.col === col);
-              return (
-                <div key={col} style={{ width: 16, flexShrink: 0 }} className="text-[9px] text-[var(--color-muted)]">
-                  {lbl?.label ?? ''}
-                </div>
-              );
-            })}
-          </div>
+        <div
+          ref={gridScrollRef}
+          className="overflow-x-auto pb-1"
+          style={{ cursor: 'grab' }}
+          onMouseDown={onGridMouseDown}
+          onMouseMove={onGridMouseMove}
+          onMouseUp={onGridMouseUp}
+          onMouseLeave={onGridMouseUp}
+          onWheel={onGridWheel}
+        >
           <div className="flex gap-0.5">
             {weeks.map((week, col) => (
               <div key={col} className="flex flex-col gap-0.5">
@@ -223,11 +250,21 @@ export function HistoryDashboard({
               </div>
             ))}
           </div>
-          <div className="flex gap-3 mt-2 text-[10px] text-[var(--color-muted)]">
-            <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'rgba(16,185,129,0.8)' }} /> Workout</span>
-            <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'rgba(56,189,248,0.5)' }} /> Pickup</span>
-            <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-neutral-800" /> Rest</span>
+          <div className="flex mt-1">
+            {weeks.map((_, col) => {
+              const lbl = monthLabels.find((m) => m.col === col);
+              return (
+                <div key={col} style={{ width: 14, flexShrink: 0, marginRight: 2 }} className="text-[9px] text-[var(--color-muted)] leading-none">
+                  {lbl?.label ?? ''}
+                </div>
+              );
+            })}
           </div>
+        </div>
+        <div className="flex gap-3 mt-2 text-[10px] text-[var(--color-muted)]">
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'rgba(16,185,129,0.8)' }} /> Workout</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'rgba(56,189,248,0.5)' }} /> Pickup</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-neutral-800" /> Rest</span>
         </div>
 
         {/* Day detail panel */}
@@ -360,38 +397,55 @@ export function HistoryDashboard({
             {['M','T','W','T','F','S','S'].map((d, i) => <span key={i}>{d}</span>)}
           </div>
           <div className="flex flex-col gap-1">
-            {calRows.map((row, ri) => (
-              <div key={ri} className="grid grid-cols-7 gap-1">
+            {calRows.map((row, ri) => {
+              const prevRow = calRows[ri - 1];
+              const rowStartsNewMonth = ri === 0 || (prevRow && row[0].iso.slice(0, 7) !== prevRow[6].iso.slice(0, 7));
+              const rowMonthName = rowStartsNewMonth ? new Date(row[0].iso + 'T12:00:00').toLocaleString('default', { month: 'long', year: 'numeric' }) : null;
+              return (
+              <div key={ri}>
+              {rowMonthName && <p className="text-xs font-semibold text-[var(--color-muted)] pt-2 pb-1">{rowMonthName}</p>}
+              <div className="grid grid-cols-7 gap-1">
                 {row.map((cell, ci) => {
                   const isInLast30 = cell.iso >= d30ISO && cell.iso <= todayISO;
                   const w = workoutByDate.get(cell.iso);
                   const p = pickupsByDate.get(cell.iso);
                   const hasActivity = w || p?.length;
                   const isToday = cell.iso === todayISO;
+                  // Mid-row month boundary: month changes from previous cell in same row
+                  const isMidMonthBoundary = ci > 0 && row[ci].iso.slice(0, 7) !== row[ci - 1].iso.slice(0, 7);
+                  const midMonthLabel = isMidMonthBoundary
+                    ? new Date(cell.iso + 'T12:00:00').toLocaleString('default', { month: 'short' })
+                    : null;
                   return (
-                    <button
-                      key={ci}
-                      type="button"
-                      onClick={() => { if (isInLast30) setSelectedDate((d) => d === cell.iso ? null : cell.iso); }}
-                      className={`rounded-lg py-2 flex flex-col items-center text-xs transition-colors ${
-                        !isInLast30 ? 'opacity-0 pointer-events-none' :
-                        selectedDate === cell.iso ? 'bg-emerald-500 text-black' :
-                        w ? 'bg-emerald-950 border border-emerald-800' :
-                        p?.length ? 'bg-sky-950 border border-sky-800' :
-                        'bg-[var(--color-card)] border border-[var(--color-border)]'
-                      }`}
-                    >
-                      <span className={`font-semibold ${isToday ? 'text-emerald-400' : ''}`}>{cell.day}</span>
-                      {hasActivity && isInLast30 && (
-                        <span className="mt-0.5 text-[8px] leading-none">
-                          {w ? '●' : '◌'}
-                        </span>
+                    <div key={ci} className={isMidMonthBoundary ? 'border-l-2 border-neutral-600 pl-0.5 -ml-0.5' : ''}>
+                      {midMonthLabel && (
+                        <p className="text-[9px] font-semibold text-[var(--color-muted)] text-center pb-0.5 leading-none">{midMonthLabel}</p>
                       )}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => { if (isInLast30) setSelectedDate((d) => d === cell.iso ? null : cell.iso); }}
+                        className={`w-full rounded-lg py-2 flex flex-col items-center text-xs transition-colors ${
+                          !isInLast30 ? 'opacity-0 pointer-events-none' :
+                          selectedDate === cell.iso ? 'bg-emerald-500 text-black' :
+                          w ? 'bg-emerald-950 border border-emerald-800' :
+                          p?.length ? 'bg-sky-950 border border-sky-800' :
+                          'bg-[var(--color-card)] border border-[var(--color-border)]'
+                        }`}
+                      >
+                        <span className={`font-semibold ${isToday ? 'text-emerald-400' : ''}`}>{cell.day}</span>
+                        {hasActivity && isInLast30 && (
+                          <span className="mt-0.5 text-[8px] leading-none">
+                            {w ? '●' : '◌'}
+                          </span>
+                        )}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
-            ))}
+              </div>
+              );
+            })}
           </div>
         </section>
       )}

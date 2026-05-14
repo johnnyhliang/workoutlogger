@@ -78,7 +78,7 @@ export function VertPanel({ initial }: { initial: VertLogEntry[] }) {
 
       <section className="rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] p-4 mb-4">
         <label className="block text-xs text-[var(--color-muted)] mb-1">Today (inches)</label>
-        <div className="flex gap-2 mb-2">
+        <div className="flex gap-2 mb-2 items-stretch">
           <input
             type="number"
             inputMode="decimal"
@@ -86,12 +86,12 @@ export function VertPanel({ initial }: { initial: VertLogEntry[] }) {
             value={vert}
             onChange={(e) => setVert(e.target.value)}
             placeholder="—"
-            className="flex-1 bg-neutral-900 rounded-lg px-3 py-3 text-2xl font-semibold tabular-nums outline-none focus:ring-1 focus:ring-emerald-500"
+            className="flex-1 min-w-0 bg-neutral-900 rounded-lg px-3 py-3 text-2xl font-semibold tabular-nums outline-none focus:ring-1 focus:ring-emerald-500"
           />
           <button
             onClick={submit}
             disabled={pending || !vert}
-            className="px-4 rounded-lg bg-emerald-500 text-black font-semibold disabled:opacity-30"
+            className="px-5 rounded-lg bg-emerald-500 text-black font-semibold disabled:opacity-30 shrink-0"
           >
             Log
           </button>

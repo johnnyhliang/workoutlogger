@@ -15,6 +15,7 @@ import {
   guideContent,
   mobilityConfig,
   mealsConfig,
+  reminders,
 } from '@/db/schema';
 import type { MobilityExercise, ProteinPreset } from '@/db/queries';
 import type { DayKey } from '@/lib/program';
@@ -321,6 +322,21 @@ export async function logoutAction() {
   const jar = await cookies();
   jar.delete('app_auth');
   redir('/login');
+}
+
+export async function saveReminder(input: { name: string; timeHHMM: string }) {
+  await db.insert(reminders).values({ name: input.name, timeHHMM: input.timeHHMM });
+  revalidatePath('/reminders');
+}
+
+export async function deleteReminder(id: number) {
+  await db.delete(reminders).where(eq(reminders.id, id));
+  revalidatePath('/reminders');
+}
+
+export async function toggleReminder(id: number, enabled: boolean) {
+  await db.update(reminders).set({ enabled: enabled ? 1 : 0 }).where(eq(reminders.id, id));
+  revalidatePath('/reminders');
 }
 
 export async function saveGuide(content: string) {

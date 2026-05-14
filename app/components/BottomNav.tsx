@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Dumbbell, ChartLine, Drumstick, Scale, Rocket } from 'lucide-react';
+import { Dumbbell, ChartLine, Drumstick, Scale, Bell } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 const items: { href: string; label: string; Icon: LucideIcon }[] = [
@@ -10,7 +10,7 @@ const items: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: '/history', label: 'History', Icon: ChartLine },
   { href: '/meals', label: 'Protein', Icon: Drumstick },
   { href: '/weight', label: 'Body', Icon: Scale },
-  { href: '/vert', label: 'Vert', Icon: Rocket },
+  { href: '/reminders', label: 'Alerts', Icon: Bell },
 ];
 
 export function BottomNav() {

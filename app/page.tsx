@@ -17,6 +17,8 @@ import {
   getDayNote,
   getCustomExercises,
   getMobilityExercises,
+  getActivityStreak,
+  getAllTimeBestForExercise,
 } from '@/db/queries';
 import type { WorkoutSet } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -43,17 +45,18 @@ export default async function Today({
   const lastFridayType = await getLastFridayType();
   const dayKey = override ?? suggestDayKey(weekday, lastFridayType);
 
-  const [todayPickups, dayNote, customExercises, mobilityExercises] = await Promise.all([
+  const [todayPickups, dayNote, customExercises, mobilityExercises, streak] = await Promise.all([
     db.select().from(pickupLog).where(eq(pickupLog.date, date)),
     getDayNote(date),
     getCustomExercises(),
     getMobilityExercises(),
+    getActivityStreak(),
   ]);
 
   if (!dayKey) {
     return (
       <main className="px-4 pt-6">
-        <Header date={date} weekday={weekday} dayKey={null} />
+        <Header date={date} weekday={weekday} dayKey={null} streak={streak} />
         <p className="text-[var(--color-muted)] text-sm mb-4">
           Rest day — pickup or recovery. Pick a workout below if you want to lift anyway.
         </p>
@@ -99,9 +102,23 @@ export default async function Today({
     }),
   );
 
+  const allTimeBests = await Promise.all(
+    exercises.map((ex) => {
+      const activeKey = (() => {
+        const setsForDefault = setsByEx.get(ex.key);
+        if (setsForDefault && setsForDefault.length > 0) return ex.key;
+        for (const [k, v] of setsByEx) {
+          if (v[0]?.isSwap === 1 && (ex.swaps ?? []).includes(k)) return k;
+        }
+        return ex.key;
+      })();
+      return getAllTimeBestForExercise(activeKey, date);
+    }),
+  );
+
   return (
     <main className="px-4 pt-6">
-      <Header date={date} weekday={weekday} dayKey={dayKey} />
+      <Header date={date} weekday={weekday} dayKey={dayKey} streak={streak} />
 
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs text-[var(--color-muted)]">Override day</span>
@@ -126,6 +143,7 @@ export default async function Today({
             })()
           }
           lastSession={lastSessions[i]}
+          allTimeBest={allTimeBests[i]}
         />
       ))}
 
@@ -143,17 +161,19 @@ function Header({
   date,
   weekday,
   dayKey,
+  streak,
 }: {
   date: string;
   weekday: string;
   dayKey: DayKey | null;
+  streak: number;
 }) {
   const cap = weekday ? weekday[0].toUpperCase() + weekday.slice(1) : '';
   return (
     <header className="mb-4 flex items-start justify-between">
       <div>
         <p className="text-xs text-[var(--color-muted)] tabular-nums">
-          {cap} · {date}
+          {cap} · {date}{streak >= 2 && <span className="ml-2 text-xs text-orange-400 font-medium">{streak}d</span>}
         </p>
         <h1 className="text-3xl font-bold tracking-tight">
           {dayKey ? dayLabel(dayKey) : 'Rest Day'}

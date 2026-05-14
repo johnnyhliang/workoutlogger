@@ -56,12 +56,14 @@ export function ExerciseCard({
   dayKey,
   existingSets,
   lastSession,
+  allTimeBest,
 }: {
   exercise: Exercise;
   date: string;
   dayKey: DayKey | 'custom';
   existingSets: WorkoutSet[];
   lastSession: LastSession;
+  allTimeBest?: { weight: number | null; reps: number } | null;
 }) {
   const [activeKey, setActiveKey] = useState<string>(() => {
     if (existingSets[0]?.isSwap) return existingSets[0].exerciseKey;
@@ -122,6 +124,12 @@ export function ExerciseCard({
     lastTop && todayTop
       ? (todayTop.weight ?? 0) > (lastTop.weight ?? 0) ||
         ((todayTop.weight ?? 0) === (lastTop.weight ?? 0) && todayTop.reps > lastTop.reps)
+      : null;
+
+  const isPR =
+    allTimeBest && todayTop
+      ? (todayTop.weight ?? 0) > (allTimeBest.weight ?? 0) ||
+        ((todayTop.weight ?? 0) === (allTimeBest.weight ?? 0) && todayTop.reps > allTimeBest.reps)
       : null;
 
   function updateRow(idx: number, field: 'weight' | 'reps', val: string) {
@@ -249,6 +257,11 @@ export function ExerciseCard({
             <p className="text-xs mt-1 text-[var(--color-bad)] font-medium">
               ✗ Below last week
             </p>
+          )}
+          {isPR && allWorkingLogged && rows.some(r => !r.isWarmup && r.saved) && (
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-yellow-400">
+              ★ PR
+            </span>
           )}
         </div>
         {exercise.swaps && exercise.swaps.length > 0 && (

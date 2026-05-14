@@ -140,6 +140,22 @@ export const mealsConfig = sqliteTable('meals_config', {
   updatedAt: integer('updated_at').notNull().default(sql`(unixepoch() * 1000)`),
 });
 
+export const pushSubscriptions = sqliteTable('push_subscriptions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  createdAt: integer('created_at').notNull().default(sql`(unixepoch() * 1000)`),
+});
+
+export const reminders = sqliteTable('reminders', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  timeHHMM: text('time_hh_mm').notNull(),
+  enabled: integer('enabled').notNull().default(1),
+  createdAt: integer('created_at').notNull().default(sql`(unixepoch() * 1000)`),
+});
+
 export type Workout = typeof workouts.$inferSelect;
 export type NewWorkout = typeof workouts.$inferInsert;
 export type WorkoutSet = typeof sets.$inferSelect;
@@ -157,3 +173,6 @@ export type CustomExercise = typeof customExercises.$inferSelect;
 export type GuideContent = typeof guideContent.$inferSelect;
 export type MobilityConfig = typeof mobilityConfig.$inferSelect;
 export type MealsConfig = typeof mealsConfig.$inferSelect;
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type Reminder = typeof reminders.$inferSelect;
+export type NewReminder = typeof reminders.$inferInsert;

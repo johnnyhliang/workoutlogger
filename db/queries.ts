@@ -21,7 +21,7 @@ import {
   mobilityConfig,
   mealsConfig,
 } from './schema';
-import { and, desc, eq, sql, inArray } from 'drizzle-orm';
+import { and, desc, eq, lt, sql, inArray } from 'drizzle-orm';
 import type { DayKey } from '@/lib/program';
 
 export async function getLastFridayType(): Promise<DayKey | null> {
@@ -168,6 +168,44 @@ export async function getMealsConfig(): Promise<{ presets: ProteinPreset[]; goal
   } catch {
     return { presets: DEFAULT_PRESETS, goalG: 180 };
   }
+}
+
+export async function getActivityStreak(): Promise<number> {
+  const result = await db.run(sql`
+    SELECT DISTINCT date FROM (
+      SELECT date FROM workouts INNER JOIN sets ON sets.workout_id = workouts.id
+      UNION SELECT date FROM meals
+      UNION SELECT date FROM body_log
+      UNION SELECT date FROM vert_log
+      UNION SELECT date FROM pickup_log
+    ) ORDER BY date DESC
+  `);
+  const dates = (result.rows as unknown as { date: string }[]).map(r => r.date);
+  const today = new Date().toLocaleDateString('en-CA');
+  let streak = 0;
+  let cursor = new Date(today);
+  for (const date of dates) {
+    const cursorStr = cursor.toLocaleDateString('en-CA');
+    if (date === cursorStr) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    } else if (date < cursorStr) {
+      break;
+    }
+  }
+  return streak;
+}
+
+export async function getAllTimeBestForExercise(exerciseKey: string, beforeDate: string): Promise<{ weight: number | null; reps: number } | null> {
+  const rows = await db
+    .select({ weight: sets.weight, reps: sets.reps })
+    .from(sets)
+    .innerJoin(workouts, eq(sets.workoutId, workouts.id))
+    .where(and(eq(sets.exerciseKey, exerciseKey), eq(sets.isWarmup, 0), lt(workouts.date, beforeDate)))
+    .orderBy(desc(sets.weight), desc(sets.reps))
+    .limit(1);
+  if (!rows[0]) return null;
+  return { weight: rows[0].weight, reps: rows[0].reps };
 }
 
 export async function getExerciseHistory(exerciseKey: string, limit = 20) {

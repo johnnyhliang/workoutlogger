@@ -3,20 +3,27 @@ import type { NextRequest } from 'next/server';
 
 const COOKIE_NAME = 'app_auth';
 
-async function hashPassword(pw: string): Promise<string> {
-  const data = new TextEncoder().encode(pw);
-  const buf = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+async function makeToken(secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode('auth'));
+  return Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 export async function proxy(request: NextRequest) {
   const password = process.env.APP_PASSWORD;
-  if (!password) return NextResponse.next();
+  const secret = process.env.SESSION_SECRET;
+  if (!password || !secret) return NextResponse.next();
 
   const { pathname } = request.nextUrl;
-  if (pathname === '/login') return NextResponse.next();
+  if (pathname.startsWith('/login') || pathname.startsWith('/api/')) return NextResponse.next();
 
-  const expected = await hashPassword(password);
+  const expected = await makeToken(secret);
   const token = request.cookies.get(COOKIE_NAME)?.value;
   if (token === expected) return NextResponse.next();
 
@@ -27,5 +34,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|manifest.webmanifest).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|manifest.webmanifest|sw.js).*)'],
 };
